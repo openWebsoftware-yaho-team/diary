@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINE PORTFOLIO - 일정 관리</title>
+    <style>
+        /* === [이미지 색감 및 기본 설정] === */
+        :root {
+            --bg-body: #F9F1E6;       /* 전체 배경 (연한 베이지) */
+            --bg-header-footer: #F9E9D8; /* 헤더/푸터 배경 (살구색) */
+            --text-brown: #5D4037;    /* 메인 글자색 (짙은 갈색) */
+            --point-gold: #C5A065;    /* 로고 및 포인트 (금색) */
+            
+            /* 테이블 행 색상 */
+            --row-purple: #F5E6F7;    /* 연한 보라 */
+            --row-yellow: #FFF9E1;    /* 연한 노랑 */
+            --row-green: #E8F5E9;     /* 연한 녹색 */
+            
+            --max-width: 1100px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body); color: var(--text-brown); line-height: 1.6; }
+        
+        /* === [헤더 구조: 참고 사이트와 동일] === */
+        .header { background-color: var(--bg-header-footer); padding: 20px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .header-container { max-width: var(--max-width); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+        
+        .logo { font-size: 32px; font-weight: 900; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); cursor: pointer; }
+        .logo span { color: #fff; } /* MP 로고 느낌 */
+
+        .nav { display: flex; gap: 25px; }
+        .nav-item { font-size: 16px; font-weight: bold; cursor: pointer; color: var(--text-brown); transition: 0.3s; }
+        .nav-item:hover { color: var(--point-gold); }
+
+        /* === [본문 영역] === */
+        .main-content { max-width: var(--max-width); margin: 40px auto; padding: 0 20px; text-align: center; }
+
+        /* 중요 일정 아이콘 섹션 */
+        .icon-section { display: flex; justify-content: center; gap: 40px; margin-bottom: 60px; }
+        .icon-circle { width: 140px; height: 140px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .icon-circle img { width: 60px; height: 60px; opacity: 0.7; } /* 실제 아이콘 이미지 대체용 */
+
+        .section-title { font-size: 20px; font-weight: bold; color: #999; margin-bottom: 50px; border-bottom: 1px dashed #ccc; padding-bottom: 20px; width: 80%; margin-left: auto; margin-right: auto; }
+
+        /* === [일정 테이블 디자인: 이미지 100% 반영] === */
+        .schedule-table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 30px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .schedule-table th { background-color: #fcfcfc; padding: 20px; border: 1px solid #eee; font-weight: bold; }
+        .schedule-table td { padding: 15px; border: 1px solid #eee; font-size: 15px; font-weight: bold; }
+        
+        .row-purple { background-color: var(--row-purple); }
+        .row-yellow { background-color: var(--row-yellow); }
+        .row-green { background-color: var(--row-green); }
+        
+        .col-time { width: 15%; text-align: center; }
+        .col-title { width: 30%; text-align: center; }
+        .col-memo { width: 55%; text-align: left; padding-left: 30px !important; color: #777; font-weight: normal !important; }
+
+        /* === [푸터 구조] === */
+        .footer { background-color: var(--bg-header-footer); padding: 40px 0; font-size: 12px; color: var(--text-brown); border-top: 1px solid rgba(0,0,0,0.05); }
+        .footer-container { max-width: var(--max-width); margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .footer-info p { margin-bottom: 5px; }
+        .clickn-logo { font-weight: bold; text-align: right; }
+        .clickn-logo span { font-size: 18px; color: #000; }
+
+        /* 뷰 전환을 위한 스타일 */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">MP<span> MINE PORTFOLIO</span></div>
+            <nav class="nav">
+                <div class="nav-item" onclick="switchView('home')">홈</div>
+                <div class="nav-item" onclick="switchView('timeline')">타임라인</div>
+                <div class="nav-item" onclick="switchView('calendar')">캘린더</div>
+                <div class="nav-item" onclick="switchView('ai')">AI 도우미</div>
+                <div class="nav-item">WELCOME!</div>
+                <div class="nav-item">로그인</div>
+                <div class="nav-item">회원가입</div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        
+        <div id="home-view" class="view-section active">
+            <div class="icon-section">
+                <div class="icon-circle">🤝</div>
+                <div class="icon-circle">☁️</div>
+                <div class="icon-circle">📞</div>
+                <div class="icon-circle">🌱</div>
+                <div class="icon-circle">📊</div>
+            </div>
+
+            <div class="section-title">
+                중요하다고 표시해놓은 일정은 이렇게 맨 위에 띄워주는 것도 좋겠다
+            </div>
+
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th class="col-time">대충 시간</th>
+                        <th class="col-title">일정</th>
+                        <th class="col-memo">비고 (메모 같은거) 비워놔도 상관없음</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="row-purple">
+                        <td class="col-time">00:00 ~ 00:30</td>
+                        <td class="col-title">원신</td>
+                        <td class="col-memo">이 안에도 체크리스트 같은거 넣을수도 있고</td>
+                    </tr>
+                    <tr class="row-yellow">
+                        <td class="col-time">01:00 ~ 01:20</td>
+                        <td class="col-title">칼바람</td>
+                        <td class="col-memo">일 종류에 따라 행 색도 바꿀 수 있게 하면 좋겠다</td>
+                    </tr>
+                    <tr class="row-green">
+                        <td class="col-time">01:20 ~ 01:30</td>
+                        <td class="col-title">림버스</td>
+                        <td class="col-memo">이런식으로 사용자가 스스로 작성하거나 아니면 AI한테 나 이렇게 할거야 하면 이제 AI가 자동으로 써준다거나 할 수 있나? 할 수 있겠지 안되면 울면서 수정함</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="timeline-view" class="view-section"><h2>타임라인 화면 준비 중</h2></div>
+        <div id="calendar-view" class="view-section"><h2>캘린더 화면 준비 중</h2></div>
+        <div id="ai-view" class="view-section"><h2>AI 도우미 화면 준비 중</h2></div>
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-info">
+                <p>회사명 : (주)회사명 &nbsp;&nbsp; 대표자 : 홍길동 &nbsp;&nbsp; 주소 : 서울특별시 &nbsp;&nbsp; 전화 : 0000-0000</p>
+                <p>사업자등록번호 : 000-00-00000 &nbsp;&nbsp; 통신판매업신고 : 0000-0000</p>
+                <p style="margin-top: 15px; opacity: 0.5;">COPYRIGHT (c) 미인포트폴리오 ALL RIGHTS RESERVED.</p>
+            </div>
+            <div class="clickn-logo">
+                CLICK<span>N</span><br>
+                <small>사이트 제작엔 누구나 클릭엔</small>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function switchView(viewId) {
+            const views = document.querySelectorAll('.view-section');
+            views.forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId + '-view').classList.add('active');
+        }
+    </script>
+</body>
+</html>
