@@ -1,0 +1,155 @@
+/* === [이미지 색감 및 기본 설정] === */
+:root {
+    --bg-body: #F9F1E6;       /* 전체 배경 (연한 베이지) */
+    --bg-header-footer: #F9E9D8; /* 헤더/푸터 배경 (살구색) */
+    --text-brown: #5D4037;    /* 메인 글자색 (짙은 갈색) */
+    --point-gold: #C5A065;    /* 로고 및 포인트 (금색) */
+    
+    /* 테이블 행 색상 */
+    --row-purple: #F5E6F7;    /* 연한 보라 */
+    --row-yellow: #FFF9E1;    /* 연한 노랑 */
+    --row-green: #E8F5E9;     /* 연한 녹색 */
+    
+    --max-width: 1100px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body); color: var(--text-brown); line-height: 1.6; }
+
+/* === [헤더 구조] === */
+.header { background-color: var(--bg-header-footer); padding: 20px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.header-container { max-width: var(--max-width); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: relative; }
+
+.logo { font-size: 32px; font-weight: 900; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); cursor: pointer; }
+.logo span { color: #fff; }
+
+/* [수정] 네비게이션 메뉴 (a 태그 스타일 초기화 추가) */
+.nav { display: flex; gap: 25px; }
+.nav-item { 
+    font-size: 16px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    color: var(--text-brown); 
+    transition: 0.3s; 
+    text-decoration: none; /* a 태그 밑줄 제거 */
+}
+.nav-item:hover { color: var(--point-gold); }
+
+/* === [본문 영역] === */
+.main-content { max-width: var(--max-width); margin: 40px auto; padding: 0 20px; text-align: center; }
+
+/* 중요 일정 아이콘 섹션 */
+.icon-section { 
+    display: flex; 
+    justify-content: center; 
+    flex-wrap: wrap; 
+    /* 간격도 화면 크기에 맞춰 최소 15px ~ 최대 40px 사이로 유연하게 변함 */
+    gap: clamp(15px, 4vw, 40px); 
+    margin-bottom: 60px; 
+}
+
+.icon-circle { 
+    /* 크기를 화면 너비(vw)에 비례하게 하되, 최소 70px / 최대 140px을 넘지 않도록 제한 */
+    width: clamp(70px, 12vw, 140px); 
+    height: clamp(70px, 12vw, 140px); 
+    background: #fff; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+    /* 안에 들어가는 이모지(폰트) 크기도 동그라미 비율에 맞춰 같이 조절 */
+    font-size: clamp(28px, 5vw, 50px); 
+}
+
+.section-title { font-size: 20px; font-weight: bold; color: #999; margin-bottom: 50px; border-bottom: 1px dashed #ccc; padding-bottom: 20px; width: 80%; margin-left: auto; margin-right: auto; }
+
+/* === [일정 테이블 디자인] === */
+.schedule-table { 
+    width: 100%; 
+    table-layout: fixed; /* 테이블 너비 비율을 고정하여 화면 크기에 맞춰 자연스럽게 줄어들게 함 */
+    border-collapse: collapse; 
+    background: #fff; 
+    margin-top: 30px; 
+    border-radius: 10px; 
+    overflow: hidden; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+}
+.schedule-table th { background-color: #fcfcfc; padding: 20px; border: 1px solid #eee; font-weight: bold; }
+.schedule-table td { 
+    padding: 15px; 
+    border: 1px solid #eee; 
+    font-size: 15px; 
+    font-weight: bold; 
+    word-break: break-word; /* 글자가 칸을 넘어가면 자연스럽게 줄바꿈되도록 설정 */
+}
+
+.row-purple { background-color: var(--row-purple); }
+.row-yellow { background-color: var(--row-yellow); }
+.row-green { background-color: var(--row-green); }
+
+.col-time { width: 20%; text-align: center; }
+.col-title { width: 25%; text-align: center; }
+.col-memo { width: 55%; text-align: left; padding-left: 30px !important; color: #777; font-weight: normal !important; }
+
+/* [수정] 푸터 구조 (중앙 정렬로 심플하게 변경) */
+.footer { background-color: var(--bg-header-footer); padding: 30px 0; font-size: 13px; color: var(--text-brown); border-top: 1px solid rgba(0,0,0,0.05); }
+.footer-container { max-width: var(--max-width); margin: 0 auto; padding: 0 20px; display: flex; justify-content: center; align-items: center; text-align: center; }
+.footer-info p { opacity: 0.6; margin: 0; }
+
+/* 뷰 전환을 위한 스타일 */
+.view-section { display: none; }
+.view-section.active { display: block; }
+
+/* === [모바일 반응형 메뉴 & 레이아웃 조정] === */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background-color: var(--text-brown);
+    border-radius: 3px;
+}
+
+@media (max-width: 768px) {
+    .hamburger { display: flex; }
+    
+    .nav {
+        flex-direction: column;
+        position: absolute;
+        top: 100%; /* 헤더 바로 아래에 딱 붙어서 열리게 설정 */
+        left: 0;
+        width: 100%;
+        background-color: var(--bg-header-footer);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1); /* 본문 위에 떠있는 느낌을 주는 그림자 */
+        text-align: center;
+        z-index: 100;
+        
+        /* 스르륵 열리는 애니메이션 효과 */
+        overflow: hidden;
+        max-height: 0; 
+        opacity: 0;
+        padding: 0;
+        transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out;
+    }
+
+    .nav.show { 
+        max-height: 400px; /* 메뉴가 모두 보일 만큼 넉넉한 높이 */
+        opacity: 1; 
+        padding: 20px 0; 
+    }
+
+    .nav-item {
+        padding: 12px 0; /* 모바일에서 터치하기 편하게 간격 추가 */
+    }
+    
+    /* 모바일에서는 테이블 폰트와 여백을 살짝 줄여서 한눈에 들어오게 조절 */
+    .schedule-table th { padding: 10px; font-size: 13px; }
+    .schedule-table td { padding: 10px; font-size: 13px; }
+    .col-memo { padding-left: 10px !important; }
+}
