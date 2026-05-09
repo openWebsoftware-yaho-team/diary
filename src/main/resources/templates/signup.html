@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINE PORTFOLIO - 회원가입</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="logo" onclick="location.href='/'">MP<span> MINE PORTFOLIO</span></div>
+            <div class="hamburger" onclick="toggleMenu()">
+                <span></span><span></span><span></span>
+            </div>
+            <nav class="nav" id="nav-menu">
+                <a href="/" class="nav-item">홈</a>
+                <a href="/timeline" class="nav-item">타임라인</a>
+                <a href="/calendar" class="nav-item">캘린더</a>
+                <a href="/ai" class="nav-item">AI 도우미</a>
+                <a href="/login" class="nav-item">로그인</a>
+                <a href="/signup" class="nav-item">회원가입</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="auth-card">
+            <h2>회원가입</h2>
+            <form action="/signup" method="post">
+                <div class="form-group">
+                    <input type="text" name="username" placeholder="아이디" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" name="email" placeholder="이메일 주소" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" name="password" placeholder="비밀번호" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" name="password_confirm" placeholder="비밀번호 확인" required>
+                </div>
+                <button type="submit" class="btn-auth">가입하기</button>
+            </form>
+            <div class="auth-footer">
+                이미 계정이 있으신가요? <a href="/login">로그인</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>COPYRIGHT (c) MINE PORTFOLIO ALL RIGHTS RESERVED.</p>
+        </div>
+    </footer>
+    <script src="/script.js"></script>
+</body>
+</html>
