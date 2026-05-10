@@ -1,4 +1,4 @@
-package com.yaho.diary;
+package com.yaho.diary.Entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
