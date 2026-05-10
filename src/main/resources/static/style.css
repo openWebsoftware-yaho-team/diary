@@ -222,6 +222,12 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     font-weight: bold;
 }
 
+.logout-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
 /* 모바일 대응 */
 @media (max-width: 768px) {
     .auth-card {

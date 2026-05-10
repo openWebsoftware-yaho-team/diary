@@ -8,28 +8,7 @@
 </head>
 <body>
 
-    <header class="header">
-        <div class="header-container">
-            <!-- 로고 클릭 시 홈(/)으로 이동 -->
-            <div class="logo" onclick="location.href='/'">YAHO<span> 다이어리 </span></div>
-            
-            <div class="hamburger" onclick="toggleMenu()">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-
-            <!-- 각 메뉴를 a 태그와 href를 이용한 실제 링크로 변경 -->
-            <nav class="nav" id="nav-menu">
-                <a href="/" class="nav-item">홈</a>
-                <a href="/timeline" class="nav-item">타임라인</a>
-                <a href="/calendar" class="nav-item">캘린더</a>
-                <a href="/ai" class="nav-item">AI 도우미</a>
-                <a href="/login" class="nav-item">로그인</a>
-                <a href="/signup" class="nav-item">회원가입</a>
-            </nav>
-        </div>
-    </header>
+    <div th:replace="~{fragments/header :: header}"></div>
 
     <main class="main-content">
         <!-- 홈 화면 컨텐츠만 남김 (다른 페이지는 각각의 html 파일에서 렌더링) -->
@@ -75,14 +54,7 @@
         </div>
     </main>
 
-    <footer class="footer">
-        <div class="footer-container">
-            <!-- 클릭엔, 회사명 지우고 저작권 정보만 중앙에 배치 -->
-            <div class="footer-info">
-                <p>COPYRIGHT (c) MINE PORTFOLIO ALL RIGHTS RESERVED.</p>
-            </div>
-        </div>
-    </footer>
+    <div th:replace="~{fragments/footer :: footer}"></div>
 
     <script src="/script.js"></script>
 </body>
