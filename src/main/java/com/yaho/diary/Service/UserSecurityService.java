@@ -1,4 +1,4 @@
-package com.yaho.diary;
+package com.yaho.diary.Service;
 
 import java.util.ArrayList;
 
@@ -7,6 +7,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.yaho.diary.Entity.SiteUser;
+import com.yaho.diary.Repository.SiteUserRepository;
 
 @Service
 public class UserSecurityService implements UserDetailsService {
