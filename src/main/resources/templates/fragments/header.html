@@ -1,0 +1,24 @@
+<header class="header" th:fragment="header" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <div class="header-container">
+        <div class="logo" onclick="location.href='/'">MP<span> MINE PORTFOLIO</span></div>
+
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+
+        <nav class="nav" id="nav-menu">
+            <a href="/" class="nav-item">홈</a>
+            <a href="/timeline" class="nav-item">타임라인</a>
+            <a href="/calendar" class="nav-item">캘린더</a>
+            <a href="/ai" class="nav-item">AI 도우미</a>
+
+            <a sec:authorize="isAnonymous()" href="/login" class="nav-item">로그인</a>
+            <a sec:authorize="isAnonymous()" href="/signup" class="nav-item">회원가입</a>
+
+            <form sec:authorize="isAuthenticated()" action="/logout" method="post" class="logout-form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="nav-item logout-btn">로그아웃</button>
+            </form>
+        </nav>
+    </div>
+</header>
