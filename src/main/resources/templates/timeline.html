@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEAM YAHO - 일정 관리 타임테이블 / 캘린더 다이어리</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="main-content">
+        <div class="section-title">주간 일정 관리 & 시간표</div>
+
+        <div class="ai-form-container">
+            <form action="/schedule/ai" method="post" class="ai-form">
+                // <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="text" name="message" class="ai-input" placeholder="예: 이번주 금요일 오후 3시에 회의 추가" required>
+                <button type="submit" class="btn-ai">✨ AI 일정 추가</button>
+            </form>
+        </div>
+
+        <div class="timetable-wrapper">
+            <div class="timetable">
+                <div class="time-col">
+                    <div class="time-header"></div>
+                    <div class="time-slot">08:00</div>
+                    <div class="time-slot">09:00</div>
+                    <div class="time-slot">10:00</div>
+                    <div class="time-slot">11:00</div>
+                    <div class="time-slot">12:00</div>
+                    <div class="time-slot">13:00</div>
+                    <div class="time-slot">14:00</div>
+                    <div class="time-slot">15:00</div>
+                    <div class="time-slot">16:00</div>
+                    <div class="time-slot">17:00</div>
+                    <div class="time-slot">18:00</div>
+                </div>
+
+                <div class="day-col" id="day-1"><div class="day-header">월</div><div class="day-grid"></div></div>
+                <div class="day-col" id="day-2"><div class="day-header">화</div><div class="day-grid"></div></div>
+                <div class="day-col" id="day-3"><div class="day-header">수</div><div class="day-grid"></div></div>
+                <div class="day-col" id="day-4"><div class="day-header">목</div><div class="day-grid"></div></div>
+                <div class="day-col" id="day-5"><div class="day-header">금</div><div class="day-grid"></div></div>
+                <div class="day-col" id="day-6"><div class="day-header">토</div><div class="day-grid"></div></div>
+                <div class="day-col" id="day-0"><div class="day-header">일</div><div class="day-grid"></div></div>
+            </div>
+        </div>
+
+<div id="schedule-data" style="display: none;">
+            <div th:each="schedule : ${scheduleList}"
+                 class="raw-data"
+                 th:data-id="${schedule.id}" 
+                 th:data-title="${schedule.title}"
+                 th:data-date="${schedule.date}"
+                 th:data-time="${schedule.startTime}">
+            </div>
+        </div>
+
+    </main>
+
+    <div id="schedule-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title">일정 상세</h3>
+            <p id="modal-time" style="color: #777; margin-bottom: 20px;"></p>
+            
+            <form id="edit-form" action="/schedule/update" method="post">
+                <input type="hidden" name="id" id="modal-id">
+                <div class="form-group">
+                    <input type="text" name="title" id="modal-title-input" required>
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button type="submit" class="btn-auth">수정 저장</button>
+                    <button type="button" class="btn-auth" style="background-color: #e74c3c;" onclick="deleteSchedule()">삭제</button>
+                </div>
+                <button type="button" class="btn-auth" style="background-color: #ccc;" onclick="closeModal()">닫기</button>
+            </form>
+        </div>
+    </div>
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-info"><p>COPYRIGHT (c) MINE PORTFOLIO ALL RIGHTS RESERVED.</p></div>
+        </div>
+    </footer>
+
+    <script src="/script.js"></script>
+</body>
+</html>
