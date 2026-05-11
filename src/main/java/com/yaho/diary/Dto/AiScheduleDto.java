@@ -17,4 +17,5 @@ public class AiScheduleDto {
     private String action;
     private String targetTitle;
     private String targetDate;
+    private Integer dayOfWeek; // add_fixed 시 사용 (0=월~6=일)
 }

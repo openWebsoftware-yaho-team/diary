@@ -40,7 +40,13 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
 .nav-item:hover { color: var(--point-gold); }
 
 /* === [본문 영역] === */
-.main-content { max-width: var(--max-width); margin: 40px auto; padding: 0 20px; text-align: center; }
+.main-content { 
+    max-width: var(--max-width); 
+    margin: 40px auto; 
+    padding: 0 20px; 
+    text-align: center;
+    overflow: visible;  /* 이거 추가 */
+}
 
 /* 중요 일정 아이콘 섹션 */
 .icon-section { 
@@ -305,15 +311,26 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     background: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    overflow-x: auto; /* 모바일에서 표가 깨지지 않고 가로 스크롤 되도록 */
+    overflow-x: auto;
+    overflow-y: visible;  /* 이거 추가 */
     margin-bottom: 50px;
 }
 
 .timetable {
     display: flex;
-    min-width: 800px; /* 너무 좁아지면 안 예쁘므로 최소 너비 지정 */
+    min-width: 800px;
     border-top: 1px solid #eee;
     border-left: 1px solid #eee;
+}
+
+/* 모바일에서만 스크롤 */
+@media (max-width: 768px) {
+    .timetable-wrapper {
+        overflow-x: auto;
+    }
+    .timetable {
+        min-width: 320px;
+    }
 }
 
 /* 좌측 시간 텍스트 컬럼 */
@@ -359,9 +376,10 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
 /* 일정이 그려질 실제 격자 공간 */
 .day-grid {
     position: relative;
-    height: 660px; /* 08:00~18:00 (11칸 * 60px) */
+    height: 600px;
     background-image: linear-gradient(to bottom, #f9f9f9 1px, transparent 1px);
-    background-size: 100% 60px; /* 1시간 간격으로 연한 가로선 배경 */
+    background-size: 100% 60px;
+    /* overflow: hidden 넣으면 안됨! */
 }
 
 /* 시간표 블록 스타일 */
