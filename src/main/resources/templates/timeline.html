@@ -5,56 +5,533 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TEAM YAHO - 일정 관리 타임테이블 / 캘린더 다이어리</title>
     <link rel="stylesheet" href="/style.css">
+    <style>
+        /* === 타임라인 + 고정일정 나란히 레이아웃 === */
+        .timeline-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* 타임테이블이 남는 공간 다 차지 */
+        .timetable-wrapper {
+            flex: 1;
+            min-width: 0; /* flex 안에서 overflow 안 터지게 */
+        }
+
+        /* === 고정 일정 사이드 패널 === */
+        .fixed-panel {
+            width: 240px;
+            flex-shrink: 0;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .fixed-panel-header {
+            background-color: var(--point-gold);
+            color: #fff;
+            padding: 14px 16px;
+            font-weight: bold;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fixed-panel-header a {
+            font-size: 12px;
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.5);
+            padding: 3px 8px;
+            border-radius: 20px;
+            transition: 0.2s;
+        }
+
+        .fixed-panel-header a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .fixed-panel-body {
+            padding: 12px;
+            max-height: 600px; /* 기본 09~18시 (10칸 * 60px) */
+            overflow-y: auto;
+        }
+
+        .fixed-item-card {
+            background: var(--bg-body);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--point-gold);
+            text-align: left;
+        }
+
+        .fixed-item-card .f-title {
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--text-brown);
+            margin-bottom: 3px;
+        }
+
+        .fixed-item-card .f-day {
+            font-size: 12px;
+            color: var(--point-gold);
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .fixed-item-card .f-time {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .fixed-item-card .f-end {
+            font-size: 11px;
+            color: #bbb;
+            margin-top: 4px;
+        }
+
+        .fixed-empty {
+            text-align: center;
+            color: #bbb;
+            font-size: 13px;
+            padding: 20px 0;
+        }
+
+        /* 카테고리별 왼쪽 색상 */
+        .fixed-item-card.cat-회의  { border-left-color: #d5e8f9; }
+        .fixed-item-card.cat-공부  { border-left-color: #d4f2d4; }
+        .fixed-item-card.cat-약속  { border-left-color: #fbe0ce; }
+        .fixed-item-card.cat-운동  { border-left-color: #ebdff2; }
+        .fixed-item-card.cat-기타  { border-left-color: #fcf3c5; }
+
+        /* 삭제 버튼 */
+        .btn-fixed-del {
+            margin-top: 6px;
+            width: 100%;
+            padding: 4px 0;
+            font-size: 11px;
+            background: #fee2e2;
+            color: #e74c3c;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-fixed-del:hover { background: #e74c3c; color: #fff; }
+
+        .btn-fixed-edit {
+            flex: 1;
+            padding: 4px 0;
+            font-size: 11px;
+            background: #e8f4fd;
+            color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-fixed-edit:hover { background: #3498db; color: #fff; }
+
+        .btn-fixed-cancel {
+            padding: 8px;
+            background: #eee;
+            color: #555;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-fixed-cancel:hover { background: #ccc; }
+
+        /* 추가 폼 토글 버튼 */
+        .btn-fixed-add-toggle {
+            width: 100%;
+            padding: 9px;
+            background: var(--point-gold);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: 0.2s;
+        }
+        .btn-fixed-add-toggle:hover { background: #b08e56; }
+
+        /* 추가 폼 */
+        .fixed-add-form {
+            display: none;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+        }
+        .fixed-add-form.open { display: block; }
+
+        .fixed-add-form input,
+        .fixed-add-form select {
+            width: 100%;
+            padding: 7px 10px;
+            margin-bottom: 7px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fff;
+            box-sizing: border-box;
+        }
+        .fixed-add-form label {
+            font-size: 11px;
+            color: #888;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .btn-fixed-submit {
+            width: 100%;
+            padding: 8px;
+            background: var(--point-gold);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-fixed-submit:hover { background: #b08e56; }
+
+        /* === 모바일: 패널을 타임테이블 위로 이동 === */
+        @media (max-width: 768px) {
+            .timeline-layout {
+                flex-direction: column;
+            }
+
+            .fixed-panel {
+                width: 100%;
+            }
+
+            .fixed-panel-body {
+                max-height: 200px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 10px;
+            }
+
+            .fixed-item-card {
+                flex: 1 1 140px;
+                margin-bottom: 0;
+            }
+
+            /* 타임테이블 모바일에서 꽉 채우기 */
+            .timetable-wrapper {
+                width: 100%;
+            }
+
+            .timetable {
+                min-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
 
 <header th:replace="~{fragments/header :: header}"></header>
 
     <main class="main-content">
-        <div class="section-title">주간 일정 관리 & 시간표</div>
+        <div class="section-title">주간 일정 관리 &amp; 시간표</div>
 
         <div class="ai-form-container">
             <form action="/schedule/ai" method="post" class="ai-form">
-                // <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <input type="text" name="message" class="ai-input" placeholder="예: 이번주 금요일 오후 3시에 회의 추가" required>
                 <button type="submit" class="btn-ai">✨ AI 일정 추가</button>
             </form>
         </div>
 
-        <div class="timetable-wrapper">
-            <div class="timetable">
-                <div class="time-col">
-                    <div class="time-header"></div>
-                    <div class="time-slot">08:00</div>
-                    <div class="time-slot">09:00</div>
-                    <div class="time-slot">10:00</div>
-                    <div class="time-slot">11:00</div>
-                    <div class="time-slot">12:00</div>
-                    <div class="time-slot">13:00</div>
-                    <div class="time-slot">14:00</div>
-                    <div class="time-slot">15:00</div>
-                    <div class="time-slot">16:00</div>
-                    <div class="time-slot">17:00</div>
-                    <div class="time-slot">18:00</div>
-                </div>
+        <!-- 타임테이블 + 고정일정 나란히 -->
+        <div class="timeline-layout">
 
-                <div class="day-col" id="day-1"><div class="day-header">월</div><div class="day-grid"></div></div>
-                <div class="day-col" id="day-2"><div class="day-header">화</div><div class="day-grid"></div></div>
-                <div class="day-col" id="day-3"><div class="day-header">수</div><div class="day-grid"></div></div>
-                <div class="day-col" id="day-4"><div class="day-header">목</div><div class="day-grid"></div></div>
-                <div class="day-col" id="day-5"><div class="day-header">금</div><div class="day-grid"></div></div>
-                <div class="day-col" id="day-6"><div class="day-header">토</div><div class="day-grid"></div></div>
-                <div class="day-col" id="day-0"><div class="day-header">일</div><div class="day-grid"></div></div>
+            <!-- 고정 일정 패널 (모바일에서는 위로 올라옴) -->
+            <div class="fixed-panel">
+                <div class="fixed-panel-header">
+                    📌 고정 일정
+                </div>
+                <div class="fixed-panel-body">
+
+                    <!-- 추가 폼 토글 버튼 -->
+                    <button class="btn-fixed-add-toggle" onclick="toggleFixedForm()">+ 고정 일정 추가</button>
+
+                    <!-- 추가 폼 (기본 숨김) -->
+                    <div class="fixed-add-form" id="fixed-add-form">
+                        <form th:action="@{/fixed/add}" method="post">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                            <label>일정 이름</label>
+                            <input type="text" name="title" placeholder="예: 알고리즘 스터디" required>
+
+                            <label>요일</label>
+                            <select name="dayOfWeek" required>
+                                <option value="0">월요일</option>
+                                <option value="1">화요일</option>
+                                <option value="2">수요일</option>
+                                <option value="3">목요일</option>
+                                <option value="4">금요일</option>
+                                <option value="5">토요일</option>
+                                <option value="6">일요일</option>
+                            </select>
+
+                            <label>시작 시간</label>
+                            <select name="startTime" required>
+                                <option value="">선택</option>
+                                <option value="00:00">00시</option>
+                                <option value="01:00">01시</option>
+                                <option value="02:00">02시</option>
+                                <option value="03:00">03시</option>
+                                <option value="04:00">04시</option>
+                                <option value="05:00">05시</option>
+                                <option value="06:00">06시</option>
+                                <option value="07:00">07시</option>
+                                <option value="08:00">08시</option>
+                                <option value="09:00">09시</option>
+                                <option value="10:00">10시</option>
+                                <option value="11:00">11시</option>
+                                <option value="12:00">12시</option>
+                                <option value="13:00">13시</option>
+                                <option value="14:00">14시</option>
+                                <option value="15:00">15시</option>
+                                <option value="16:00">16시</option>
+                                <option value="17:00">17시</option>
+                                <option value="18:00">18시</option>
+                                <option value="19:00">19시</option>
+                                <option value="20:00">20시</option>
+                                <option value="21:00">21시</option>
+                                <option value="22:00">22시</option>
+                                <option value="23:00">23시</option>
+                            </select>
+
+                            <label>종료 시간</label>
+                            <select name="endTime" required>
+                                <option value="">선택</option>
+                                <option value="01:00">01시</option>
+                                <option value="02:00">02시</option>
+                                <option value="03:00">03시</option>
+                                <option value="04:00">04시</option>
+                                <option value="05:00">05시</option>
+                                <option value="06:00">06시</option>
+                                <option value="07:00">07시</option>
+                                <option value="08:00">08시</option>
+                                <option value="09:00">09시</option>
+                                <option value="10:00">10시</option>
+                                <option value="11:00">11시</option>
+                                <option value="12:00">12시</option>
+                                <option value="13:00">13시</option>
+                                <option value="14:00">14시</option>
+                                <option value="15:00">15시</option>
+                                <option value="16:00">16시</option>
+                                <option value="17:00">17시</option>
+                                <option value="18:00">18시</option>
+                                <option value="19:00">19시</option>
+                                <option value="20:00">20시</option>
+                                <option value="21:00">21시</option>
+                                <option value="22:00">22시</option>
+                                <option value="23:00">23시</option>
+                                <option value="24:00">24시</option>
+                            </select>
+
+                            <label>카테고리</label>
+                            <select name="category" required>
+                                <option value="회의">회의</option>
+                                <option value="공부">공부</option>
+                                <option value="약속">약속</option>
+                                <option value="운동">운동</option>
+                                <option value="기타">기타</option>
+                            </select>
+
+                            <label>기한 (비워두면 무기한)</label>
+                            <input type="date" name="endDate">
+
+                            <button type="submit" class="btn-fixed-submit">✅ 추가</button>
+                        </form>
+                    </div>
+
+                    <!-- 고정 일정 목록 -->
+                    <div th:if="${fixedList == null or #lists.isEmpty(fixedList)}" class="fixed-empty">
+                        고정 일정이 없어요
+                    </div>
+                    <div th:each="f : ${fixedList}"
+                         class="fixed-item-card"
+                         th:classappend="'cat-' + ${f.category}">
+
+                        <!-- 보기 모드 -->
+                        <div class="f-view">
+                            <div class="f-title" th:text="${f.title}"></div>
+                            <div class="f-day" th:text="${{'월','화','수','목','금','토','일'}[f.dayOfWeek] + '요일'}"></div>
+                            <div class="f-time" th:text="${f.startTime + ' ~ ' + f.endTime}"></div>
+                            <div class="f-end" th:text="${f.endDate != null ? '~' + f.endDate + '까지' : '무기한'}"></div>
+                            <div style="display:flex; gap:6px; margin-top:6px;">
+                                <button type="button" class="btn-fixed-edit" onclick="toggleFixedEdit(this)">✏️ 수정</button>
+                                <form th:action="@{/fixed/delete/{id}(id=${f.id})}" method="post" style="flex:1;">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <button type="submit" class="btn-fixed-del">🗑 삭제</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 수정 모드 (기본 숨김) -->
+                        <div class="f-edit" style="display:none;">
+                            <form th:action="@{/fixed/update/{id}(id=${f.id})}" method="post">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                                <label>이름</label>
+                                <input type="text" name="title" th:value="${f.title}" required>
+
+                                <label>요일</label>
+                                <select name="dayOfWeek" required>
+                                    <option value="0" th:selected="${f.dayOfWeek == 0}">월</option>
+                                    <option value="1" th:selected="${f.dayOfWeek == 1}">화</option>
+                                    <option value="2" th:selected="${f.dayOfWeek == 2}">수</option>
+                                    <option value="3" th:selected="${f.dayOfWeek == 3}">목</option>
+                                    <option value="4" th:selected="${f.dayOfWeek == 4}">금</option>
+                                    <option value="5" th:selected="${f.dayOfWeek == 5}">토</option>
+                                    <option value="6" th:selected="${f.dayOfWeek == 6}">일</option>
+                                </select>
+
+                                <label>시작</label>
+                                <select name="startTime" required>
+                                    <option value="00:00" th:selected="${#strings.startsWith(f.startTime, '00')}">00시</option>
+                                    <option value="01:00" th:selected="${#strings.startsWith(f.startTime, '01')}">01시</option>
+                                    <option value="02:00" th:selected="${#strings.startsWith(f.startTime, '02')}">02시</option>
+                                    <option value="03:00" th:selected="${#strings.startsWith(f.startTime, '03')}">03시</option>
+                                    <option value="04:00" th:selected="${#strings.startsWith(f.startTime, '04')}">04시</option>
+                                    <option value="05:00" th:selected="${#strings.startsWith(f.startTime, '05')}">05시</option>
+                                    <option value="06:00" th:selected="${#strings.startsWith(f.startTime, '06')}">06시</option>
+                                    <option value="07:00" th:selected="${#strings.startsWith(f.startTime, '07')}">07시</option>
+                                    <option value="08:00" th:selected="${#strings.startsWith(f.startTime, '08')}">08시</option>
+                                    <option value="09:00" th:selected="${#strings.startsWith(f.startTime, '09')}">09시</option>
+                                    <option value="10:00" th:selected="${#strings.startsWith(f.startTime, '10')}">10시</option>
+                                    <option value="11:00" th:selected="${#strings.startsWith(f.startTime, '11')}">11시</option>
+                                    <option value="12:00" th:selected="${#strings.startsWith(f.startTime, '12')}">12시</option>
+                                    <option value="13:00" th:selected="${#strings.startsWith(f.startTime, '13')}">13시</option>
+                                    <option value="14:00" th:selected="${#strings.startsWith(f.startTime, '14')}">14시</option>
+                                    <option value="15:00" th:selected="${#strings.startsWith(f.startTime, '15')}">15시</option>
+                                    <option value="16:00" th:selected="${#strings.startsWith(f.startTime, '16')}">16시</option>
+                                    <option value="17:00" th:selected="${#strings.startsWith(f.startTime, '17')}">17시</option>
+                                    <option value="18:00" th:selected="${#strings.startsWith(f.startTime, '18')}">18시</option>
+                                    <option value="19:00" th:selected="${#strings.startsWith(f.startTime, '19')}">19시</option>
+                                    <option value="20:00" th:selected="${#strings.startsWith(f.startTime, '20')}">20시</option>
+                                    <option value="21:00" th:selected="${#strings.startsWith(f.startTime, '21')}">21시</option>
+                                    <option value="22:00" th:selected="${#strings.startsWith(f.startTime, '22')}">22시</option>
+                                    <option value="23:00" th:selected="${#strings.startsWith(f.startTime, '23')}">23시</option>
+                                </select>
+
+                                <label>종료</label>
+                                <select name="endTime" required>
+                                    <option value="01:00" th:selected="${#strings.startsWith(f.endTime, '01')}">01시</option>
+                                    <option value="02:00" th:selected="${#strings.startsWith(f.endTime, '02')}">02시</option>
+                                    <option value="03:00" th:selected="${#strings.startsWith(f.endTime, '03')}">03시</option>
+                                    <option value="04:00" th:selected="${#strings.startsWith(f.endTime, '04')}">04시</option>
+                                    <option value="05:00" th:selected="${#strings.startsWith(f.endTime, '05')}">05시</option>
+                                    <option value="06:00" th:selected="${#strings.startsWith(f.endTime, '06')}">06시</option>
+                                    <option value="07:00" th:selected="${#strings.startsWith(f.endTime, '07')}">07시</option>
+                                    <option value="08:00" th:selected="${#strings.startsWith(f.endTime, '08')}">08시</option>
+                                    <option value="09:00" th:selected="${#strings.startsWith(f.endTime, '09')}">09시</option>
+                                    <option value="10:00" th:selected="${#strings.startsWith(f.endTime, '10')}">10시</option>
+                                    <option value="11:00" th:selected="${#strings.startsWith(f.endTime, '11')}">11시</option>
+                                    <option value="12:00" th:selected="${#strings.startsWith(f.endTime, '12')}">12시</option>
+                                    <option value="13:00" th:selected="${#strings.startsWith(f.endTime, '13')}">13시</option>
+                                    <option value="14:00" th:selected="${#strings.startsWith(f.endTime, '14')}">14시</option>
+                                    <option value="15:00" th:selected="${#strings.startsWith(f.endTime, '15')}">15시</option>
+                                    <option value="16:00" th:selected="${#strings.startsWith(f.endTime, '16')}">16시</option>
+                                    <option value="17:00" th:selected="${#strings.startsWith(f.endTime, '17')}">17시</option>
+                                    <option value="18:00" th:selected="${#strings.startsWith(f.endTime, '18')}">18시</option>
+                                    <option value="19:00" th:selected="${#strings.startsWith(f.endTime, '19')}">19시</option>
+                                    <option value="20:00" th:selected="${#strings.startsWith(f.endTime, '20')}">20시</option>
+                                    <option value="21:00" th:selected="${#strings.startsWith(f.endTime, '21')}">21시</option>
+                                    <option value="22:00" th:selected="${#strings.startsWith(f.endTime, '22')}">22시</option>
+                                    <option value="23:00" th:selected="${#strings.startsWith(f.endTime, '23')}">23시</option>
+                                    <option value="24:00" th:selected="${#strings.startsWith(f.endTime, '24')}">24시</option>
+                                </select>
+
+                                <label>카테고리</label>
+                                <select name="category" required>
+                                    <option value="회의" th:selected="${f.category == '회의'}">회의</option>
+                                    <option value="공부" th:selected="${f.category == '공부'}">공부</option>
+                                    <option value="약속" th:selected="${f.category == '약속'}">약속</option>
+                                    <option value="운동" th:selected="${f.category == '운동'}">운동</option>
+                                    <option value="기타" th:selected="${f.category == '기타'}">기타</option>
+                                </select>
+
+                                <label>기한</label>
+                                <input type="date" name="endDate" th:value="${f.endDate}">
+
+                                <div style="display:flex; gap:6px; margin-top:4px;">
+                                    <button type="submit" class="btn-fixed-submit" style="flex:1;">💾 저장</button>
+                                    <button type="button" class="btn-fixed-cancel" onclick="toggleFixedEdit(this)" style="flex:1;">취소</button>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 기존 타임테이블 -->
+            <div class="timetable-wrapper">
+                <div class="timetable">
+                    <div class="time-col">
+                        <div class="time-header"></div>
+                        <div class="time-slot">09:00</div>
+                        <div class="time-slot">10:00</div>
+                        <div class="time-slot">11:00</div>
+                        <div class="time-slot">12:00</div>
+                        <div class="time-slot">13:00</div>
+                        <div class="time-slot">14:00</div>
+                        <div class="time-slot">15:00</div>
+                        <div class="time-slot">16:00</div>
+                        <div class="time-slot">17:00</div>
+                        <div class="time-slot">18:00</div>
+                    </div>
+
+                    <div class="day-col" id="day-1"><div class="day-header">월</div><div class="day-grid"></div></div>
+                    <div class="day-col" id="day-2"><div class="day-header">화</div><div class="day-grid"></div></div>
+                    <div class="day-col" id="day-3"><div class="day-header">수</div><div class="day-grid"></div></div>
+                    <div class="day-col" id="day-4"><div class="day-header">목</div><div class="day-grid"></div></div>
+                    <div class="day-col" id="day-5"><div class="day-header">금</div><div class="day-grid"></div></div>
+                    <div class="day-col" id="day-6"><div class="day-header">토</div><div class="day-grid"></div></div>
+                    <div class="day-col" id="day-0"><div class="day-header">일</div><div class="day-grid"></div></div>
+                </div>
+            </div>
+
+        </div>
+        <!-- /timeline-layout -->
+
+        <div id="schedule-data" style="display: none;">
+            <div th:each="schedule : ${scheduleList}"
+                 class="raw-data"
+                 th:data-id="${schedule.id}"
+                 th:data-title="${schedule.title}"
+                 th:data-date="${schedule.date}"
+                 th:data-time="${schedule.startTime}"
+                 th:data-end="${schedule.endTime}">
             </div>
         </div>
 
-<div id="schedule-data" style="display: none;">
-            <div th:each="schedule : ${scheduleList}"
-                 class="raw-data"
-                 th:data-id="${schedule.id}" 
-                 th:data-title="${schedule.title}"
-                 th:data-date="${schedule.date}"
-                 th:data-time="${schedule.startTime}">
+        <!-- 고정 일정 데이터 (JS 렌더링용) -->
+        <div id="fixed-data" style="display: none;">
+            <div th:each="f : ${fixedList}"
+                 class="fixed-raw"
+                 th:data-title="${f.title}"
+                 th:data-day="${f.dayOfWeek}"
+                 th:data-start="${f.startTime}"
+                 th:data-end="${f.endTime}">
             </div>
         </div>
 
@@ -62,24 +539,90 @@
 
     <div id="schedule-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 id="modal-title">일정 상세</h3>
-            <p id="modal-time" style="color: #777; margin-bottom: 20px;"></p>
-            
+            <h3 style="margin-bottom: 16px;">📅 일정 수정</h3>
             <form id="edit-form" action="/schedule/update" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <input type="hidden" name="id" id="modal-id">
+
                 <div class="form-group">
+                    <label style="font-size:13px;color:#888;">제목</label>
                     <input type="text" name="title" id="modal-title-input" required>
                 </div>
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <button type="submit" class="btn-auth">수정 저장</button>
-                    <button type="button" class="btn-auth" style="background-color: #e74c3c;" onclick="deleteSchedule()">삭제</button>
+                <div class="form-group">
+                    <label style="font-size:13px;color:#888;">날짜</label>
+                    <input type="date" name="date" id="modal-date-input" required>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-size:13px;color:#888;">시작</label>
+                        <select name="startTime" id="modal-start-input" required style="width:100%;padding:15px;border:1px solid #eee;border-radius:10px;background:#fafafa;font-size:15px;">
+                            <option value="00:00">00시</option>
+                            <option value="01:00">01시</option>
+                            <option value="02:00">02시</option>
+                            <option value="03:00">03시</option>
+                            <option value="04:00">04시</option>
+                            <option value="05:00">05시</option>
+                            <option value="06:00">06시</option>
+                            <option value="07:00">07시</option>
+                            <option value="08:00">08시</option>
+                            <option value="09:00">09시</option>
+                            <option value="10:00">10시</option>
+                            <option value="11:00">11시</option>
+                            <option value="12:00">12시</option>
+                            <option value="13:00">13시</option>
+                            <option value="14:00">14시</option>
+                            <option value="15:00">15시</option>
+                            <option value="16:00">16시</option>
+                            <option value="17:00">17시</option>
+                            <option value="18:00">18시</option>
+                            <option value="19:00">19시</option>
+                            <option value="20:00">20시</option>
+                            <option value="21:00">21시</option>
+                            <option value="22:00">22시</option>
+                            <option value="23:00">23시</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-size:13px;color:#888;">종료</label>
+                        <select name="endTime" id="modal-end-input" style="width:100%;padding:15px;border:1px solid #eee;border-radius:10px;background:#fafafa;font-size:15px;">
+                            <option value="">없음</option>
+                            <option value="01:00">01시</option>
+                            <option value="02:00">02시</option>
+                            <option value="03:00">03시</option>
+                            <option value="04:00">04시</option>
+                            <option value="05:00">05시</option>
+                            <option value="06:00">06시</option>
+                            <option value="07:00">07시</option>
+                            <option value="08:00">08시</option>
+                            <option value="09:00">09시</option>
+                            <option value="10:00">10시</option>
+                            <option value="11:00">11시</option>
+                            <option value="12:00">12시</option>
+                            <option value="13:00">13시</option>
+                            <option value="14:00">14시</option>
+                            <option value="15:00">15시</option>
+                            <option value="16:00">16시</option>
+                            <option value="17:00">17시</option>
+                            <option value="18:00">18시</option>
+                            <option value="19:00">19시</option>
+                            <option value="20:00">20시</option>
+                            <option value="21:00">21시</option>
+                            <option value="22:00">22시</option>
+                            <option value="23:00">23시</option>
+                            <option value="24:00">24시</option>
+                        </select>
+                    </div>
+                </div>
+                <p id="modal-time" style="color:#aaa; font-size:12px; margin-bottom:14px;"></p>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button type="submit" class="btn-auth">💾 수정 저장</button>
+                    <button type="button" class="btn-auth" style="background-color: #e74c3c;" onclick="deleteSchedule()">🗑 삭제</button>
                 </div>
                 <button type="button" class="btn-auth" style="background-color: #ccc;" onclick="closeModal()">닫기</button>
             </form>
         </div>
     </div>
-
-    </main>
 
     <footer class="footer">
         <div class="footer-container">
@@ -88,5 +631,20 @@
     </footer>
 
     <script src="/script.js"></script>
+    <script>
+        function toggleFixedForm() {
+            const form = document.getElementById('fixed-add-form');
+            form.classList.toggle('open');
+        }
+
+        function toggleFixedEdit(btn) {
+            const card = btn.closest('.fixed-item-card');
+            const view = card.querySelector('.f-view');
+            const edit = card.querySelector('.f-edit');
+            const isEditing = edit.style.display !== 'none';
+            view.style.display = isEditing ? 'block' : 'none';
+            edit.style.display = isEditing ? 'none' : 'block';
+        }
+    </script>
 </body>
 </html>
