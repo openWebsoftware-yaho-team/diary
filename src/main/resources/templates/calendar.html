@@ -2,8 +2,8 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TEAM YAHO - 월간 캘린더</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -14,9 +14,9 @@
         <div class="section-title">월간 캘린더</div>
 
         <div class="calendar-controls">
-            <button class="btn-cal-nav" id="btn-prev-month">◀</button>
+            <button id="btn-prev-month" class="btn-cal-nav">◀</button>
             <h2 id="calendar-month-year" class="calendar-title">202X년 X월</h2>
-            <button class="btn-cal-nav" id="btn-next-month">▶</button>
+            <button id="btn-next-month" class="btn-cal-nav">▶</button>
         </div>
 
         <div class="calendar-wrapper">
@@ -29,12 +29,10 @@
                 <div class="cal-day-name">금</div>
                 <div class="cal-day-name text-blue">토</div>
             </div>
-            
-            <div class="calendar-grid" id="calendar-body">
-                </div>
+            <div id="calendar-body" class="calendar-grid"></div>
         </div>
 
-        <div id="calendar-data" style="display: none;">
+        <div id="calendar-data" style="display:none">
             <div th:each="schedule : ${scheduleList}"
                  class="cal-raw-data"
                  th:data-id="${schedule.id}"
@@ -50,99 +48,83 @@
     <script src="/script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const calendarBody = document.getElementById('calendar-body');
-            const monthYearText = document.getElementById('calendar-month-year');
-            const dataContainer = document.getElementById('calendar-data');
-            
-            let currentDate = new Date(); // 현재 날짜 기준
+            const calBody   = document.getElementById('calendar-body');
+            const titleEl   = document.getElementById('calendar-month-year');
+            const dataBox   = document.getElementById('calendar-data');
+            const colorPool = ['bg-pastel-green', 'bg-pastel-yellow', 'bg-pastel-blue', 'bg-pastel-orange', 'bg-pastel-purple'];
 
-            const colors = ['bg-pastel-green', 'bg-pastel-yellow', 'bg-pastel-blue', 'bg-pastel-orange', 'bg-pastel-purple'];
+            let cur = new Date();
 
-            function renderCalendar(date) {
-                calendarBody.innerHTML = ''; // 초기화
-                
-                const year = date.getFullYear();
-                const month = date.getMonth();
-                
-                // 타이틀 업데이트
-                monthYearText.textContent = `${year}년 ${month + 1}월`;
+            function draw(date) {
+                calBody.innerHTML = '';
 
-                // 이번 달 1일의 요일과 이번 달 마지막 날짜 구하기
-                const firstDayIndex = new Date(year, month, 1).getDay();
-                const lastDay = new Date(year, month + 1, 0).getDate();
+                const y = date.getFullYear();
+                const m = date.getMonth();
+                titleEl.textContent = `${y}년 ${m + 1}월`;
 
-                // 1. 달력 시작 전 빈 칸 채우기
-                for (let i = 0; i < firstDayIndex; i++) {
-                    const emptyCell = document.createElement('div');
-                    emptyCell.className = 'cal-cell empty';
-                    calendarBody.appendChild(emptyCell);
+                const firstDow = new Date(y, m, 1).getDay();
+                const lastDay  = new Date(y, m + 1, 0).getDate();
+                const today    = new Date();
+
+                // 앞쪽 빈 칸
+                for (let i = 0; i < firstDow; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cal-cell empty';
+                    calBody.appendChild(cell);
                 }
 
-                // 2. 날짜 칸 채우기
-                for (let day = 1; day <= lastDay; day++) {
+                // 날짜 칸
+                for (let d = 1; d <= lastDay; d++) {
                     const cell = document.createElement('div');
                     cell.className = 'cal-cell';
-                    
-                    // 오늘 날짜 하이라이트
-                    const today = new Date();
-                    let isToday = (day === today.getDate() && month === today.getMonth() && year === today.getFullYear());
-                    
-                    // 날짜 숫자 태그 생성
-                    const dayNum = document.createElement('div');
-                    dayNum.className = isToday ? 'cal-date is-today' : 'cal-date';
-                    dayNum.textContent = day;
-                    
-                    // 일요일(0), 토요일(6) 색상 지정 (빈칸 갯수 + 현재일 - 1) % 7
-                    const currentDayIndex = (firstDayIndex + day - 1) % 7;
-                    if (currentDayIndex === 0 && !isToday) dayNum.classList.add('text-red');
-                    if (currentDayIndex === 6 && !isToday) dayNum.classList.add('text-blue');
 
-                    cell.appendChild(dayNum);
+                    const isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear();
+                    const dow = (firstDow + d - 1) % 7;
 
-                    // 날짜 형식 맞추기 (YYYY-MM-DD)
-                    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    cell.setAttribute('data-date', dateString);
+                    const dateNum = document.createElement('div');
+                    dateNum.className = isToday ? 'cal-date is-today' : 'cal-date';
+                    dateNum.textContent = d;
+                    if (!isToday && dow === 0) dateNum.classList.add('text-red');
+                    if (!isToday && dow === 6) dateNum.classList.add('text-blue');
+                    cell.appendChild(dateNum);
 
-                    // 일정 컨테이너
-                    const eventContainer = document.createElement('div');
-                    eventContainer.className = 'cal-events';
-                    cell.appendChild(eventContainer);
+                    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    cell.setAttribute('data-date', dateStr);
 
-                    calendarBody.appendChild(cell);
+                    const evtWrap = document.createElement('div');
+                    evtWrap.className = 'cal-events';
+                    cell.appendChild(evtWrap);
+
+                    calBody.appendChild(cell);
                 }
 
-                // 3. 백엔드에서 넘어온 일정 데이터 달력에 꽂아넣기
-                if (dataContainer) {
-                    const rawElements = dataContainer.querySelectorAll('.cal-raw-data');
-                    rawElements.forEach((el, index) => {
+                // 일정 붙이기
+                if (dataBox) {
+                    dataBox.querySelectorAll('.cal-raw-data').forEach((el, i) => {
                         const targetDate = el.getAttribute('data-date');
                         const title = el.getAttribute('data-title');
-                        const time = el.getAttribute('data-time') ? el.getAttribute('data-time').substring(0,5) : '';
+                        const time  = el.getAttribute('data-time') ? el.getAttribute('data-time').substring(0, 5) : '';
 
-                        // 해당 날짜의 셀 찾기
-                        const targetCell = calendarBody.querySelector(`.cal-cell[data-date="${targetDate}"]`);
-                        if (targetCell) {
-                            const eventDiv = document.createElement('div');
-                            eventDiv.className = `cal-event-chip ${colors[index % colors.length]}`;
-                            eventDiv.innerHTML = `<span class="time">${time}</span> ${title}`;
-                            targetCell.querySelector('.cal-events').appendChild(eventDiv);
-                        }
+                        const targetCell = calBody.querySelector(`.cal-cell[data-date="${targetDate}"]`);
+                        if (!targetCell) return;
+
+                        const chip = document.createElement('div');
+                        chip.className = `cal-event-chip ${colorPool[i % colorPool.length]}`;
+                        chip.innerHTML = `<span class="time">${time}</span> ${title}`;
+                        targetCell.querySelector('.cal-events').appendChild(chip);
                     });
                 }
             }
 
-            // 초기 렌더링
-            renderCalendar(currentDate);
+            draw(cur);
 
-            // 이벤트 리스너: 이전 달 / 다음 달
             document.getElementById('btn-prev-month').addEventListener('click', () => {
-                currentDate.setMonth(currentDate.getMonth() - 1);
-                renderCalendar(currentDate);
+                cur.setMonth(cur.getMonth() - 1);
+                draw(cur);
             });
-
             document.getElementById('btn-next-month').addEventListener('click', () => {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-                renderCalendar(currentDate);
+                cur.setMonth(cur.getMonth() + 1);
+                draw(cur);
             });
         });
     </script>

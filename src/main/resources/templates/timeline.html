@@ -6,20 +6,20 @@
     <title>TEAM YAHO - 일정 관리 타임테이블 / 캘린더 다이어리</title>
     <link rel="stylesheet" href="/style.css">
     <style>
-        /* === 타임라인 + 고정일정 나란히 레이아웃 === */
+        /* 타임테이블 + 고정일정 레이아웃 */
         .timeline-layout {
             display: flex;
             gap: 20px;
             align-items: flex-start;
         }
 
-        /* 타임테이블이 남는 공간 다 차지 */
+        
         .timetable-wrapper {
             flex: 1;
             min-width: 0; /* flex 안에서 overflow 안 터지게 */
         }
 
-        /* === 고정 일정 사이드 패널 === */
+        /* 고정 일정 패널 */
         .fixed-panel {
             width: 240px;
             flex-shrink: 0;
@@ -101,14 +101,14 @@
             padding: 20px 0;
         }
 
-        /* 카테고리별 왼쪽 색상 */
+        
         .fixed-item-card.cat-회의  { border-left-color: #d5e8f9; }
         .fixed-item-card.cat-공부  { border-left-color: #d4f2d4; }
         .fixed-item-card.cat-약속  { border-left-color: #fbe0ce; }
         .fixed-item-card.cat-운동  { border-left-color: #ebdff2; }
         .fixed-item-card.cat-기타  { border-left-color: #fcf3c5; }
 
-        /* 삭제 버튼 */
+        
         .btn-fixed-del {
             margin-top: 6px;
             width: 100%;
@@ -148,7 +148,7 @@
         }
         .btn-fixed-cancel:hover { background: #ccc; }
 
-        /* 추가 폼 토글 버튼 */
+        
         .btn-fixed-add-toggle {
             width: 100%;
             padding: 9px;
@@ -164,7 +164,7 @@
         }
         .btn-fixed-add-toggle:hover { background: #b08e56; }
 
-        /* 추가 폼 */
+        
         .fixed-add-form {
             display: none;
             background: #fafafa;
@@ -206,7 +206,7 @@
         }
         .btn-fixed-submit:hover { background: #b08e56; }
 
-        /* === 모바일: 패널을 타임테이블 위로 이동 === */
+        /* 모바일 */
         @media (max-width: 768px) {
             .timeline-layout {
                 flex-direction: column;
@@ -255,20 +255,20 @@
             </form>
         </div>
 
-        <!-- 타임테이블 + 고정일정 나란히 -->
+        
         <div class="timeline-layout">
 
-            <!-- 고정 일정 패널 (모바일에서는 위로 올라옴) -->
+            
             <div class="fixed-panel">
                 <div class="fixed-panel-header">
                     📌 고정 일정
                 </div>
                 <div class="fixed-panel-body">
 
-                    <!-- 추가 폼 토글 버튼 -->
+                    
                     <button class="btn-fixed-add-toggle" onclick="toggleFixedForm()">+ 고정 일정 추가</button>
 
-                    <!-- 추가 폼 (기본 숨김) -->
+                    
                     <div class="fixed-add-form" id="fixed-add-form">
                         <form th:action="@{/fixed/add}" method="post">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -361,7 +361,7 @@
                         </form>
                     </div>
 
-                    <!-- 고정 일정 목록 -->
+                    
                     <div th:if="${fixedList == null or #lists.isEmpty(fixedList)}" class="fixed-empty">
                         고정 일정이 없어요
                     </div>
@@ -369,7 +369,7 @@
                          class="fixed-item-card"
                          th:classappend="'cat-' + ${f.category}">
 
-                        <!-- 보기 모드 -->
+                        
                         <div class="f-view">
                             <div class="f-title" th:text="${f.title}"></div>
                             <div class="f-day" th:text="${{'월','화','수','목','금','토','일'}[f.dayOfWeek] + '요일'}"></div>
@@ -483,7 +483,7 @@
                 </div>
             </div>
 
-            <!-- 기존 타임테이블 -->
+            
             <div class="timetable-wrapper">
                 <div class="timetable">
                     <div class="time-col">
@@ -511,7 +511,7 @@
             </div>
 
         </div>
-        <!-- /timeline-layout -->
+        
 
         <div id="schedule-data" style="display: none;">
             <div th:each="schedule : ${scheduleList}"
@@ -524,7 +524,7 @@
             </div>
         </div>
 
-        <!-- 고정 일정 데이터 (JS 렌더링용) -->
+        
         <div id="fixed-data" style="display: none;">
             <div th:each="f : ${fixedList}"
                  class="fixed-raw"

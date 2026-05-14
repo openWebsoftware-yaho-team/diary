@@ -9,8 +9,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 public class Schedule {
 

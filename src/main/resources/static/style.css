@@ -1,124 +1,135 @@
-/* === [이미지 색감 및 기본 설정] === */
+/* 기본 색상 변수 */
 :root {
-    --bg-body: #F9F1E6;       /* 전체 배경 (연한 베이지) */
-    --bg-header-footer: #F9E9D8; /* 헤더/푸터 배경 (살구색) */
-    --text-brown: #5D4037;    /* 메인 글자색 (짙은 갈색) */
-    --point-gold: #C5A065;    /* 로고 및 포인트 (금색) */
-    
-    /* 테이블 행 색상 */
-    --row-purple: #F5E6F7;    /* 연한 보라 */
-    --row-yellow: #FFF9E1;    /* 연한 노랑 */
-    --row-green: #E8F5E9;     /* 연한 녹색 */
-    
+    --bg-body: #F9F1E6;
+    --bg-header-footer: #F9E9D8;
+    --text-brown: #5D4037;
+    --point-gold: #C5A065;
+
+    --row-purple: #F5E6F7;
+    --row-yellow: #FFF9E1;
+    --row-green: #E8F5E9;
+
     --max-width: 1100px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body); color: var(--text-brown); line-height: 1.6; }
 
-/* === [헤더 구조] === */
+/* 헤더 */
 .header { background-color: var(--bg-header-footer); padding: 20px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
-.header-container { max-width: var(--max-width); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: relative; }
+.header-container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
 
 .logo { font-size: 32px; font-weight: 900; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); cursor: pointer; }
-.logo span { 
-    color: #fff; 
-    font-size: 28px; /* 💡 이 숫자를 바꿔서 원하는 크기로 조절하세요 (기본 로고는 32px입니다) */
-    font-weight: bold; /* 💡 로고 메인 글자보다 얇게 표현하고 싶다면 normal을 넣어주세요 */
-    margin-left: 8px; /* 💡 'YAHO' 글자와 사이 간격을 조금 띄우고 싶다면 추가하세요 */
+.logo span {
+    color: #fff;
+    font-size: 28px;
+    font-weight: bold;
+    margin-left: 8px;
 }
-/* [수정] 네비게이션 메뉴 (a 태그 스타일 초기화 추가) */
+
 .nav { display: flex; gap: 25px; }
-.nav-item { 
-    font-size: 16px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    color: var(--text-brown); 
-    transition: 0.3s; 
-    text-decoration: none; /* a 태그 밑줄 제거 */
+.nav-item {
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-brown);
+    text-decoration: none;
+    transition: 0.3s;
 }
 .nav-item:hover { color: var(--point-gold); }
 
-/* === [본문 영역] === */
-.main-content { 
-    max-width: var(--max-width); 
-    margin: 40px auto; 
-    padding: 0 20px; 
+/* 본문 */
+.main-content {
+    max-width: var(--max-width);
+    margin: 40px auto;
+    padding: 0 20px;
     text-align: center;
-    overflow: visible;  /* 이거 추가 */
+    overflow: visible;
 }
 
-/* 중요 일정 아이콘 섹션 */
-.icon-section { 
-    display: flex; 
-    justify-content: center; 
-    flex-wrap: wrap; 
-    /* 간격도 화면 크기에 맞춰 최소 15px ~ 최대 40px 사이로 유연하게 변함 */
-    gap: clamp(15px, 4vw, 40px); 
-    margin-bottom: 60px; 
+.icon-section {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: clamp(15px, 4vw, 40px);
+    margin-bottom: 60px;
 }
 
-.icon-circle { 
-    /* 크기를 화면 너비(vw)에 비례하게 하되, 최소 70px / 최대 140px을 넘지 않도록 제한 */
-    width: clamp(70px, 12vw, 140px); 
-    height: clamp(70px, 12vw, 140px); 
-    background: #fff; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-    /* 안에 들어가는 이모지(폰트) 크기도 동그라미 비율에 맞춰 같이 조절 */
-    font-size: clamp(28px, 5vw, 50px); 
+.icon-circle {
+    width: clamp(70px, 12vw, 140px);
+    height: clamp(70px, 12vw, 140px);
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    font-size: clamp(28px, 5vw, 50px);
 }
 
-.section-title { font-size: 20px; font-weight: bold; color: #999; margin-bottom: 50px; border-bottom: 1px dashed #ccc; padding-bottom: 20px; width: 80%; margin-left: auto; margin-right: auto; }
+.section-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #999;
+    margin-bottom: 50px;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 20px;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
 
-/* === [일정 테이블 디자인] === */
-.schedule-table { 
-    width: 100%; 
-    table-layout: fixed; /* 테이블 너비 비율을 고정하여 화면 크기에 맞춰 자연스럽게 줄어들게 함 */
-    border-collapse: collapse; 
-    background: #fff; 
-    margin-top: 30px; 
-    border-radius: 10px; 
-    overflow: hidden; 
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+/* 일정 테이블 */
+.schedule-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    background: #fff;
+    margin-top: 30px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 .schedule-table th { background-color: #fcfcfc; padding: 20px; border: 1px solid #eee; font-weight: bold; }
-.schedule-table td { 
-    padding: 15px; 
-    border: 1px solid #eee; 
-    font-size: 15px; 
-    font-weight: bold; 
-    word-break: break-word; /* 글자가 칸을 넘어가면 자연스럽게 줄바꿈되도록 설정 */
+.schedule-table td {
+    padding: 15px;
+    border: 1px solid #eee;
+    font-size: 15px;
+    font-weight: bold;
+    word-break: break-word;
 }
 
 .row-purple { background-color: var(--row-purple); }
 .row-yellow { background-color: var(--row-yellow); }
-.row-green { background-color: var(--row-green); }
+.row-green  { background-color: var(--row-green); }
 
-.col-time { width: 20%; text-align: center; }
+.col-time  { width: 20%; text-align: center; }
 .col-title { width: 25%; text-align: center; }
-.col-memo { width: 55%; text-align: left; padding-left: 30px !important; color: #777; font-weight: normal !important; }
+.col-memo  { width: 55%; text-align: left; padding-left: 30px !important; color: #777; font-weight: normal !important; }
 
-/* [수정] 푸터 구조 (중앙 정렬로 심플하게 변경) */
+/* 푸터 */
 .footer { background-color: var(--bg-header-footer); padding: 30px 0; font-size: 13px; color: var(--text-brown); border-top: 1px solid rgba(0,0,0,0.05); }
 .footer-container { max-width: var(--max-width); margin: 0 auto; padding: 0 20px; display: flex; justify-content: center; align-items: center; text-align: center; }
 .footer-info p { opacity: 0.6; margin: 0; }
 
-/* 뷰 전환을 위한 스타일 */
 .view-section { display: none; }
 .view-section.active { display: block; }
 
-/* === [모바일 반응형 메뉴 & 레이아웃 조정] === */
+/* 햄버거 */
 .hamburger {
     display: none;
     flex-direction: column;
     gap: 5px;
     cursor: pointer;
 }
-
 .hamburger span {
     width: 25px;
     height: 3px;
@@ -128,55 +139,39 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
 
 @media (max-width: 768px) {
     .hamburger { display: flex; }
-    
+
     .nav {
         flex-direction: column;
         position: absolute;
-        top: 100%; /* 헤더 바로 아래에 딱 붙어서 열리게 설정 */
+        top: 100%;
         left: 0;
         width: 100%;
         background-color: var(--bg-header-footer);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.1); /* 본문 위에 떠있는 느낌을 주는 그림자 */
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
         text-align: center;
         z-index: 100;
-        
-        /* 스르륵 열리는 애니메이션 효과 */
         overflow: hidden;
-        max-height: 0; 
+        max-height: 0;
         opacity: 0;
         padding: 0;
         transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out;
     }
-
-    .nav.show { 
-        max-height: 400px; /* 메뉴가 모두 보일 만큼 넉넉한 높이 */
-        opacity: 1; 
-        padding: 20px 0; 
+    .nav.show {
+        max-height: 400px;
+        opacity: 1;
+        padding: 20px 0;
     }
+    .nav-item { padding: 12px 0; }
 
-    .nav-item {
-        padding: 12px 0; /* 모바일에서 터치하기 편하게 간격 추가 */
-    }
-    
-    /* 모바일에서는 테이블 폰트와 여백을 살짝 줄여서 한눈에 들어오게 조절 */
     .schedule-table th { padding: 10px; font-size: 13px; }
     .schedule-table td { padding: 10px; font-size: 13px; }
     .col-memo { padding-left: 10px !important; }
 
-    /* 로그아웃 폼 중앙 정렬 수정 */
-    .logout-form {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-    }
-    
-    .logout-btn {
-        width: 100%;
-        text-align: center;
-    }
+    .logout-form { display: flex; justify-content: center; width: 100%; }
+    .logout-btn  { width: 100%; text-align: center; }
 }
 
-/* === [로그인 & 회원가입 전용 스타일] === */
+/* 로그인 / 회원가입 */
 .auth-card {
     max-width: 400px;
     margin: 60px auto;
@@ -186,17 +181,9 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     text-align: center;
 }
+.auth-card h2 { margin-bottom: 30px; color: var(--text-brown); font-size: 28px; }
 
-.auth-card h2 {
-    margin-bottom: 30px;
-    color: var(--text-brown);
-    font-size: 28px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
+.form-group { margin-bottom: 15px; }
 .form-group input {
     width: 100%;
     padding: 15px;
@@ -207,11 +194,7 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     outline: none;
     transition: 0.3s;
 }
-
-.form-group input:focus {
-    border-color: var(--point-gold);
-    background-color: #fff;
-}
+.form-group input:focus { border-color: var(--point-gold); background-color: #fff; }
 
 .btn-auth {
     width: 100%;
@@ -226,39 +209,14 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     margin-top: 10px;
     transition: 0.3s;
 }
+.btn-auth:hover { background-color: #b08e56; transform: translateY(-2px); }
 
-.btn-auth:hover {
-    background-color: #b08e56;
-    transform: translateY(-2px);
-}
+.auth-footer { margin-top: 25px; font-size: 14px; color: #888; }
+.auth-footer a { color: var(--point-gold); text-decoration: none; font-weight: bold; }
 
-.auth-footer {
-    margin-top: 25px;
-    font-size: 14px;
-    color: #888;
-}
+.logout-btn { background: none; border: none; cursor: pointer; }
 
-.auth-footer a {
-    color: var(--point-gold);
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.logout-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-/* 모바일 대응 */
-@media (max-width: 768px) {
-    .auth-card {
-        margin: 30px 20px;
-        padding: 30px 20px;
-    }
-}
-
-/* === [AI 일정 추가 폼 스타일] === */
+/* AI 입력 폼 */
 .ai-form-container {
     background: #fff;
     padding: 20px;
@@ -266,13 +224,7 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     margin-bottom: 30px;
 }
-
-.ai-form {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
-
+.ai-form { display: flex; gap: 10px; justify-content: center; }
 .ai-input {
     flex: 1;
     max-width: 600px;
@@ -284,12 +236,7 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     outline: none;
     transition: 0.3s;
 }
-
-.ai-input:focus {
-    border-color: var(--point-gold);
-    background-color: #fff;
-}
-
+.ai-input:focus { border-color: var(--point-gold); background-color: #fff; }
 .btn-ai {
     padding: 0 25px;
     background-color: var(--point-gold);
@@ -302,32 +249,22 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     transition: 0.3s;
     white-space: nowrap;
 }
+.btn-ai:hover { background-color: #b08e56; transform: translateY(-2px); }
 
-.btn-ai:hover {
-    background-color: #b08e56;
-    transform: translateY(-2px);
-}
-
-/* 모바일 화면일 때 입력창과 버튼을 세로로 배치 */
 @media (max-width: 768px) {
-    .ai-form {
-        flex-direction: column;
-    }
-    .btn-ai {
-        padding: 15px;
-    }
+    .ai-form { flex-direction: column; }
+    .btn-ai { padding: 15px; }
 }
 
-/* === [주간 타임테이블 스타일] === */
+/* 주간 타임테이블 */
 .timetable-wrapper {
     background: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     overflow-x: auto;
-    overflow-y: visible;  /* 이거 추가 */
+    overflow-y: visible;
     margin-bottom: 50px;
 }
-
 .timetable {
     display: flex;
     min-width: 800px;
@@ -335,46 +272,33 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     border-left: 1px solid #eee;
 }
 
-/* 모바일에서만 스크롤 */
 @media (max-width: 768px) {
-    .timetable-wrapper {
-        overflow-x: auto;
-    }
-    .timetable {
-        min-width: 320px;
-    }
+    .timetable-wrapper { overflow-x: auto; }
+    .timetable { min-width: 320px; }
 }
 
-/* 좌측 시간 텍스트 컬럼 */
 .time-col {
     width: 60px;
     flex-shrink: 0;
     background-color: #fafafa;
     border-right: 1px solid #eee;
 }
-
-.time-header {
-    height: 50px; /* 요일 헤더와 높이 맞춤 */
-    border-bottom: 1px solid #eee;
-}
-
+.time-header { height: 50px; border-bottom: 1px solid #eee; }
 .time-slot {
-    height: 60px; /* 1시간을 60px로 고정 */
+    height: 60px;
     font-size: 12px;
     color: #777;
     text-align: right;
     padding-right: 10px;
-    transform: translateY(-8px); /* 선 중간에 시간이 걸치도록 위로 살짝 올림 */
+    transform: translateY(-8px);
 }
 
-/* 요일 컬럼들 */
 .day-col {
     flex: 1;
     border-right: 1px solid #eee;
     display: flex;
     flex-direction: column;
 }
-
 .day-header {
     height: 50px;
     display: flex;
@@ -384,17 +308,13 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     border-bottom: 1px solid #eee;
     background-color: #fcfcfc;
 }
-
-/* 일정이 그려질 실제 격자 공간 */
 .day-grid {
     position: relative;
     height: 600px;
     background-image: linear-gradient(to bottom, #f9f9f9 1px, transparent 1px);
     background-size: 100% 60px;
-    /* overflow: hidden 넣으면 안됨! */
 }
 
-/* 시간표 블록 스타일 */
 .timetable-event {
     position: absolute;
     left: 2px;
@@ -406,44 +326,36 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     color: var(--text-brown);
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    /* 텍스트 줄바꿈 방지 */
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
 }
 
-/* 이미지와 비슷한 파스텔톤 컬러셋 */
-.bg-pastel-green { background-color: #d4f2d4; }
+.bg-pastel-green  { background-color: #d4f2d4; }
 .bg-pastel-yellow { background-color: #fcf3c5; }
-.bg-pastel-blue { background-color: #d5e8f9; }
+.bg-pastel-blue   { background-color: #d5e8f9; }
 .bg-pastel-orange { background-color: #fbe0ce; }
 .bg-pastel-purple { background-color: #ebdff2; }
 
-/* === [헤더 로그아웃 폼 & 버튼 스타일] === */
-.logout-form {
-    display: inline-flex;
-    margin: 0;
-    padding: 0;
-}
-
+/* 로그아웃 폼 */
+.logout-form { display: inline-flex; margin: 0; padding: 0; }
 .logout-btn {
     background: transparent;
     border: none;
     font-family: inherit;
-    /* 클래스에 .nav-item이 있으므로 글자색, 크기는 자동 적용됩니다 */
 }
 
-/* === [일정 클릭 모달창 스타일] === */
+/* 일정 모달 */
 .modal-overlay {
-    display: none; /* 평소엔 숨김 */
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0,0,0,0.4);
     z-index: 1000;
-    align-items: center; justify-content: center;
+    align-items: center;
+    justify-content: center;
 }
-
 .modal-overlay.show { display: flex; }
-
 .modal-content {
     background: #fff;
     padding: 30px;
@@ -453,29 +365,16 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     text-align: center;
 }
+.modal-content input { width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 5px; }
 
-.modal-content input {
-    width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 5px;
-}
-
-/* === [모바일 반응형: 오늘 시간표만 보이기] === */
+/* 모바일: 오늘 요일만 표시 */
 @media (max-width: 768px) {
-    .timetable {
-        min-width: 100%; /* 모바일 화면 꽉 채우기 */
-    }
-    
-    .day-col {
-        display: none; /* 기본적으로 모든 요일 숨김 */
-    }
-    
-    /* 자바스크립트가 .is-today 클래스를 붙여준 요일만 짠! 하고 나타남 */
-    .day-col.is-today {
-        display: flex; 
-    }
+    .timetable { min-width: 100%; }
+    .day-col { display: none; }
+    .day-col.is-today { display: flex; }
 }
 
-/* === [월간 캘린더 전용 스타일] === */
-
+/* 월간 캘린더 */
 .calendar-controls {
     display: flex;
     justify-content: center;
@@ -483,13 +382,7 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     gap: 30px;
     margin-bottom: 25px;
 }
-
-.calendar-title {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--text-brown);
-    min-width: 150px;
-}
+.calendar-title { font-size: 24px; font-weight: bold; color: var(--text-brown); min-width: 150px; }
 
 .btn-cal-nav {
     background: #fff;
@@ -503,11 +396,7 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     transition: 0.3s;
 }
-
-.btn-cal-nav:hover {
-    background: var(--point-gold);
-    color: #fff;
-}
+.btn-cal-nav:hover { background: var(--point-gold); color: #fff; }
 
 .calendar-wrapper {
     background: #fff;
@@ -516,33 +405,23 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     overflow: hidden;
     margin-bottom: 50px;
 }
-
 .calendar-header-row {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     background-color: #fcfcfc;
     border-bottom: 1px solid #eee;
 }
+.cal-day-name { padding: 15px 0; text-align: center; font-weight: bold; font-size: 14px; color: var(--text-brown); }
 
-.cal-day-name {
-    padding: 15px 0;
-    text-align: center;
-    font-weight: bold;
-    font-size: 14px;
-    color: var(--text-brown);
-}
-
-.text-red { color: #e74c3c !important; }
+.text-red  { color: #e74c3c !important; }
 .text-blue { color: #3498db !important; }
 
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    /* 셀 사이의 선을 긋기 위해 gap 대신 배경색 이용 */
     background-color: #eee;
-    gap: 1px; 
+    gap: 1px;
 }
-
 .cal-cell {
     background-color: #fff;
     min-height: 120px;
@@ -550,16 +429,12 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     display: flex;
     flex-direction: column;
 }
-
-.cal-cell.empty {
-    background-color: #fafafa;
-}
+.cal-cell.empty { background-color: #fafafa; }
 
 .cal-date {
     font-size: 14px;
     font-weight: bold;
     margin-bottom: 8px;
-    text-align: left;
     width: 28px;
     height: 28px;
     display: flex;
@@ -567,21 +442,15 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     justify-content: center;
     border-radius: 50%;
 }
-
-.cal-date.is-today {
-    background-color: var(--point-gold);
-    color: #fff;
-}
+.cal-date.is-today { background-color: var(--point-gold); color: #fff; }
 
 .cal-events {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    overflow-y: auto; /* 일정이 많으면 내부 스크롤 */
+    overflow-y: auto;
     flex: 1;
 }
-
-/* 스크롤바 숨기기 (웹킷 기반) */
 .cal-events::-webkit-scrollbar { display: none; }
 
 .cal-event-chip {
@@ -596,22 +465,11 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
+.cal-event-chip .time { font-weight: normal; opacity: 0.8; margin-right: 3px; }
 
-.cal-event-chip .time {
-    font-weight: normal;
-    opacity: 0.8;
-    margin-right: 3px;
-}
-
-/* 모바일 환경 대응 (달력 셀 높이 줄이기) */
 @media (max-width: 768px) {
-    .cal-cell {
-        min-height: 80px;
-        padding: 5px;
-    }
-    .cal-event-chip {
-        font-size: 10px;
-        padding: 3px;
-    }
-    .cal-event-chip .time { display: none; /* 모바일엔 공간부족으로 시간 숨김 */ }
+    .cal-cell { min-height: 80px; padding: 5px; }
+    .cal-event-chip { font-size: 10px; padding: 3px; }
+    .cal-event-chip .time { display: none; }
+    .auth-card { margin: 30px 20px; padding: 30px 20px; }
 }

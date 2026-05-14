@@ -33,7 +33,6 @@ public class ScheduleController {
         this.fixedScheduleRepository = fixedScheduleRepository;
     }
 
-    // 1. 타임라인 페이지
     @GetMapping("/timeline")
     public String timelinePage(Model model) {
         model.addAttribute("scheduleList", scheduleRepository.findAll());
@@ -41,14 +40,12 @@ public class ScheduleController {
         return "timeline";
     }
 
-    // 2. AI 일정 추가
     @PostMapping("/schedule/ai")
     public String aiSchedule(@RequestParam String message) throws Exception {
         ollamaScheduleService.extractSchedule(message);
         return "redirect:/timeline";
     }
 
-    // 3. 일정 수정
     @PostMapping("/schedule/update")
     public String updateSchedule(
             @RequestParam Long id,
@@ -57,9 +54,9 @@ public class ScheduleController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime
     ) {
-        Optional<Schedule> opt = scheduleRepository.findById(id);
-        if (opt.isPresent()) {
-            Schedule s = opt.get();
+        Optional<Schedule> found = scheduleRepository.findById(id);
+        if (found.isPresent()) {
+            Schedule s = found.get();
             s.setTitle(title);
             s.setDate(date);
             s.setStartTime(startTime);
@@ -69,20 +66,15 @@ public class ScheduleController {
         return "redirect:/timeline";
     }
 
-    // 4. 일정 삭제
     @GetMapping("/schedule/delete")
     public String deleteSchedule(@RequestParam Long id) {
         scheduleRepository.deleteById(id);
         return "redirect:/timeline";
     }
 
-    // ==========================================
-    // 5. 캘린더 페이지 (새로 추가할 부분)
-    // ==========================================
     @GetMapping("/calendar")
     public String calendarPage(Model model) {
-        // 타임라인과 동일하게 전체 일정을 DB에서 가져와 화면(HTML)으로 넘겨줍니다.
         model.addAttribute("scheduleList", scheduleRepository.findAll());
-        return "calendar"; // calendar.html 파일 렌더링
+        return "calendar";
     }
 }

@@ -1,61 +1,163 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TEAM YAHO - 일정 관리 타임테이블 / 캘린더 다이어리</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/style.css">
+    <style>
+        .stat-section {
+            display: flex;
+            justify-content: center;
+            gap: clamp(15px, 4vw, 40px);
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            padding: 28px 36px;
+            min-width: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-card .stat-icon { font-size: 36px; }
+
+        .stat-card .stat-num {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--point-gold);
+            line-height: 1;
+        }
+
+        .stat-card .stat-label {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .week-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .week-table th {
+            background-color: #fcfcfc;
+            padding: 16px;
+            border: 1px solid #eee;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .week-table td {
+            padding: 14px 16px;
+            border: 1px solid #eee;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .week-table tr.is-today td { background-color: #fffbe6; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-회의  { background: #d5e8f9; color: #3a7bd5; }
+        .badge-공부  { background: #d4f2d4; color: #2e7d32; }
+        .badge-약속  { background: #fbe0ce; color: #c0621a; }
+        .badge-운동  { background: #ebdff2; color: #7b3fa0; }
+        .badge-기타  { background: #fcf3c5; color: #a07d00; }
+
+        .no-schedule {
+            text-align: center;
+            padding: 50px 0;
+            color: #bbb;
+            font-size: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .stat-card { padding: 20px 24px; min-width: 120px; }
+            .week-table th, .week-table td { padding: 10px; font-size: 13px; }
+            .col-memo-home { display: none; }
+        }
+    </style>
 </head>
 <body>
 
     <div th:replace="~{fragments/header :: header}"></div>
 
     <main class="main-content">
-        <!-- 홈 화면 컨텐츠만 남김 (다른 페이지는 각각의 html 파일에서 렌더링) -->
-        <div>
-            <div class="icon-section">
-                <div class="icon-circle">🤝</div>
-                <div class="icon-circle">☁️</div>
-                <div class="icon-circle">📞</div>
-                <div class="icon-circle">🌱</div>
-                <div class="icon-circle">📊</div>
-            </div>
 
-            <div class="section-title">
-                중요하다고 표시해놓은 일정은 이렇게 맨 위에 띄워주는 것도 좋겠다
+        <!-- 통계 카드 -->
+        <div class="stat-section">
+            <div class="stat-card">
+                <span class="stat-icon">📅</span>
+                <span class="stat-num" th:text="${todayCount}">0</span>
+                <span class="stat-label">오늘 일정</span>
             </div>
-
-            <table class="schedule-table">
-                <thead>
-                    <tr>
-                        <th class="col-time">대충 시간</th>
-                        <th class="col-title">일정</th>
-                        <th class="col-memo">비고 (메모 같은거) 비워놔도 상관없음</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="row-purple">
-                        <td class="col-time">00:00 ~ 00:30</td>
-                        <td class="col-title">원신</td>
-                        <td class="col-memo">이 안에도 체크리스트 같은거 넣을수도 있고</td>
-                    </tr>
-                    <tr class="row-yellow">
-                        <td class="col-time">01:00 ~ 01:20</td>
-                        <td class="col-title">칼바람</td>
-                        <td class="col-memo">일 종류에 따라 행 색도 바꿀 수 있게 하면 좋겠다</td>
-                    </tr>
-                    <tr class="row-green">
-                        <td class="col-time">01:20 ~ 01:30</td>
-                        <td class="col-title">림버스</td>
-                        <td class="col-memo">이런식으로 사용자가 스스로 작성하거나 아니면 AI한테 나 이렇게 할거야 하면 이제 AI가 자동으로 써준다거나 할 수 있나? 할 수 있겠지 안되면 울면서 수정함</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="stat-card">
+                <span class="stat-icon">📋</span>
+                <span class="stat-num" th:text="${weekTotal}">0</span>
+                <span class="stat-label">이번 주 전체</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">✅</span>
+                <span class="stat-num" th:text="${weekTotal - todayCount}">0</span>
+                <span class="stat-label">오늘 이후 남은 일정</span>
+            </div>
         </div>
+
+        <div class="section-title">이번 주 일정</div>
+
+        <!-- 일정 있을 때 -->
+        <table class="week-table" th:if="${not #lists.isEmpty(weekSchedules)}">
+            <thead>
+                <tr>
+                    <th style="width:15%">날짜</th>
+                    <th style="width:10%">요일</th>
+                    <th style="width:15%">시간</th>
+                    <th style="width:25%">일정</th>
+                    <th style="width:10%">카테고리</th>
+                    <th class="col-memo-home" style="width:25%">종료</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="s : ${weekSchedules}"
+                    th:classappend="${s.date == today} ? 'is-today' : ''">
+                    <td th:text="${s.date}"></td>
+                    <td th:text="${{'일','월','화','수','목','금','토'}[s.date.dayOfWeek.value % 7] + '요일'}"></td>
+                    <td th:text="${s.startTime != null ? #temporals.format(s.startTime, 'HH:mm') : '-'}"></td>
+                    <td th:text="${s.title}"></td>
+                    <td>
+                        <span th:text="${s.category}"
+                              th:classappend="'badge badge-' + ${s.category}"></span>
+                    </td>
+                    <td class="col-memo-home"
+                        th:text="${s.endTime != null ? #temporals.format(s.endTime, 'HH:mm') : '-'}"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 일정 없을 때 -->
+        <div class="no-schedule" th:if="${#lists.isEmpty(weekSchedules)}">
+            이번 주 등록된 일정이 없어요 🌿
+        </div>
+
     </main>
 
     <div th:replace="~{fragments/footer :: footer}"></div>
-
     <script src="/script.js"></script>
 </body>
 </html>

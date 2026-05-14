@@ -27,13 +27,10 @@ public class SignupController {
 
     @PostMapping("/signup")
     public String signup(String username, String password) {
-
         SiteUser user = new SiteUser();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
-
         siteUserRepository.save(user);
-
         return "redirect:/login";
     }
 }
