@@ -162,6 +162,18 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     .schedule-table th { padding: 10px; font-size: 13px; }
     .schedule-table td { padding: 10px; font-size: 13px; }
     .col-memo { padding-left: 10px !important; }
+
+    /* 로그아웃 폼 중앙 정렬 수정 */
+    .logout-form {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .logout-btn {
+        width: 100%;
+        text-align: center;
+    }
 }
 
 /* === [로그인 & 회원가입 전용 스타일] === */
@@ -460,4 +472,146 @@ body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg-body
     .day-col.is-today {
         display: flex; 
     }
+}
+
+/* === [월간 캘린더 전용 스타일] === */
+
+.calendar-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 25px;
+}
+
+.calendar-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text-brown);
+    min-width: 150px;
+}
+
+.btn-cal-nav {
+    background: #fff;
+    border: 1px solid #eee;
+    color: var(--point-gold);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: 0.3s;
+}
+
+.btn-cal-nav:hover {
+    background: var(--point-gold);
+    color: #fff;
+}
+
+.calendar-wrapper {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow: hidden;
+    margin-bottom: 50px;
+}
+
+.calendar-header-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #fcfcfc;
+    border-bottom: 1px solid #eee;
+}
+
+.cal-day-name {
+    padding: 15px 0;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--text-brown);
+}
+
+.text-red { color: #e74c3c !important; }
+.text-blue { color: #3498db !important; }
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    /* 셀 사이의 선을 긋기 위해 gap 대신 배경색 이용 */
+    background-color: #eee;
+    gap: 1px; 
+}
+
+.cal-cell {
+    background-color: #fff;
+    min-height: 120px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.cal-cell.empty {
+    background-color: #fafafa;
+}
+
+.cal-date {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-align: left;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.cal-date.is-today {
+    background-color: var(--point-gold);
+    color: #fff;
+}
+
+.cal-events {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto; /* 일정이 많으면 내부 스크롤 */
+    flex: 1;
+}
+
+/* 스크롤바 숨기기 (웹킷 기반) */
+.cal-events::-webkit-scrollbar { display: none; }
+
+.cal-event-chip {
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-brown);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.cal-event-chip .time {
+    font-weight: normal;
+    opacity: 0.8;
+    margin-right: 3px;
+}
+
+/* 모바일 환경 대응 (달력 셀 높이 줄이기) */
+@media (max-width: 768px) {
+    .cal-cell {
+        min-height: 80px;
+        padding: 5px;
+    }
+    .cal-event-chip {
+        font-size: 10px;
+        padding: 3px;
+    }
+    .cal-event-chip .time { display: none; /* 모바일엔 공간부족으로 시간 숨김 */ }
 }

@@ -75,4 +75,14 @@ public class ScheduleController {
         scheduleRepository.deleteById(id);
         return "redirect:/timeline";
     }
+
+    // ==========================================
+    // 5. 캘린더 페이지 (새로 추가할 부분)
+    // ==========================================
+    @GetMapping("/calendar")
+    public String calendarPage(Model model) {
+        // 타임라인과 동일하게 전체 일정을 DB에서 가져와 화면(HTML)으로 넘겨줍니다.
+        model.addAttribute("scheduleList", scheduleRepository.findAll());
+        return "calendar"; // calendar.html 파일 렌더링
+    }
 }
