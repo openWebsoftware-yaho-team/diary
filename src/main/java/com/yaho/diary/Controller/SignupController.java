@@ -9,27 +9,33 @@ import com.yaho.diary.Entity.SiteUser;
 import com.yaho.diary.Repository.SiteUserRepository;
 
 @Controller
-public class SignupController {
+public class SignupController 
+{
 
     private final SiteUserRepository siteUserRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public SignupController(SiteUserRepository siteUserRepository,
-                            BCryptPasswordEncoder passwordEncoder) {
+    // 생성자~
+    public SignupController(SiteUserRepository siteUserRepository, BCryptPasswordEncoder passwordEncoder) 
+    {
         this.siteUserRepository = siteUserRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
+    // 회원가입 화면
     @GetMapping("/signup")
-    public String signup() {
-        return "signup";
+    public String signup() 
+    { 
+        return "signup"; 
     }
 
+    // 회원가입 처리
     @PostMapping("/signup")
-    public String signup(String username, String password) {
+    public String signup(String username, String password) 
+    {
         SiteUser user = new SiteUser();
         user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(password));
+        user.setPassword(passwordEncoder.encode(password)); // 암호화처리
         siteUserRepository.save(user);
         return "redirect:/login";
     }
