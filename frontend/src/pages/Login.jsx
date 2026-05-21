@@ -10,7 +10,7 @@ function Login({ setIsAuthenticated }) {
         e.preventDefault();
         
         // Spring Security form-login 규격에 맞게 FormData 객체 빌드
-        const formData = new FormData();
+        const formData = new URLSearchParams();
         formData.append('username', username);
         formData.append('password', password);
 
@@ -21,7 +21,7 @@ function Login({ setIsAuthenticated }) {
                 credentials: 'include'
             });
 
-            if (res.ok) {
+            if (res.ok) {   
                 setIsAuthenticated(true);
                 navigate('/');
             } else {

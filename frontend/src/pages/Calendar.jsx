@@ -14,6 +14,10 @@ function Calendar() {
     const [scheduleList, setScheduleList] = useState([]);
     const [fixedList, setFixedList] = useState([]);
 
+    // 추가 모달 상태
+    const [addModalOpen, setAddModalOpen] = useState(false);
+    const [newEvent, setNewEvent] = useState({ title: '', date: '', startTime: '09:00', endTime: '10:00' });
+
     useEffect(() => {
         request('/schedule/calendar').then(data => {
             setScheduleList(data.scheduleList || []);
@@ -30,6 +34,26 @@ function Calendar() {
     const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
     const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
+    // 날짜 셀 클릭 → 추가 모달
+    const handleCellClick = (dateStr) => {
+        setNewEvent({ title: '', date: dateStr, startTime: '09:00', endTime: '10:00' });
+        setAddModalOpen(true);
+    };
+
+    // 일정 추가 저장
+    const handleAddSchedule = async (e) => {
+        e.preventDefault();
+        try {
+            await request('/schedule/add', { method: 'POST', body: newEvent });
+            setAddModalOpen(false);
+            // 데이터 새로고침
+            request('/schedule/calendar').then(data => {
+                setScheduleList(data.scheduleList || []);
+                setFixedList(data.fixedList || []);
+            });
+        } catch (err) { alert(err.message); }
+    };
+
     // 달력 셀(Grid) 생성 로직
     const cells = [];
     for (let i = 0; i < firstDayIndex; i++) {
@@ -38,18 +62,16 @@ function Calendar() {
 
     for (let d = 1; d <= lastDay; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        
-        // 1. 해당 날짜의 일반 일정 필터링
+
         const dayEvents = scheduleList.filter(s => s.date === dateStr);
 
-        // 2. 해당 날짜 요일에 해당하는 고정 일정 추적 및 병합
         const cellDate = new Date(year, month, d);
-        const jsDay = cellDate.getDay(); // 0=일요일, 1=월요일, ..., 6=토요일
-        const fDayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // DB 규격 매핑: 0=월요일 ~ 6=일요일
+        const jsDay = cellDate.getDay();
+        const fDayOfWeek = jsDay === 0 ? 6 : jsDay - 1;
 
         const dayFixedEvents = fixedList.filter(f => {
             if (f.dayOfWeek !== fDayOfWeek) return false;
-            if (f.endDate && f.endDate < dateStr) return false; // 종료 기한 체크
+            if (f.endDate && f.endDate < dateStr) return false;
             return true;
         }).map(f => ({
             id: `fixed-${f.id}-${dateStr}`,
@@ -59,7 +81,6 @@ function Calendar() {
             isFixed: true
         }));
 
-        // 3. 일반 일정과 고정 일정을 합치고 시간순 정렬
         const allDayEvents = [...dayEvents, ...dayFixedEvents].sort((a, b) => {
             if (!a.startTime) return 1;
             if (!b.startTime) return -1;
@@ -76,13 +97,13 @@ function Calendar() {
         else if (dow === 6) dateClass += ' text-blue';
 
         cells.push(
-            <div key={d} className="cal-cell">
+            <div key={d} className="cal-cell" onClick={() => handleCellClick(dateStr)} style={{ cursor: 'pointer' }}>
                 <div className={dateClass}>{d}</div>
                 <div className="cal-events">
                     {allDayEvents.map((evt) => {
                         const bgClass = categoryColors[evt.category] || 'bg-pastel-green';
                         return (
-                            <div key={evt.id} className={`cal-event-chip ${bgClass}`}>
+                            <div key={evt.id} className={`cal-event-chip ${bgClass}`} onClick={e => e.stopPropagation()}>
                                 <span className="time">{evt.startTime?.substring(0, 5)}</span> {evt.title}
                             </div>
                         );
@@ -112,6 +133,38 @@ function Calendar() {
                 </div>
                 <div className="calendar-grid">{cells}</div>
             </div>
+
+            {/* 일정 추가 모달 */}
+            {addModalOpen && (
+                <div className="modal-overlay show">
+                    <div className="modal-content">
+                        <h3>📅 일정 추가 ({newEvent.date})</h3>
+                        <form onSubmit={handleAddSchedule} className="fixed-add-form open" style={{ boxShadow: 'none', padding: 0, background: 'none' }}>
+                            <label>제목</label>
+                            <input type="text" value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} required autoFocus />
+                            <label>시작 시간</label>
+                            <select value={newEvent.startTime} onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })} required>
+                                {Array.from({ length: 24 }, (_, i) => (
+                                    <option key={i} value={`${String(i).padStart(2, '0')}:00`}>{String(i).padStart(2, '0')}시</option>
+                                ))}
+                            </select>
+                            <label>종료 시간</label>
+                            <select value={newEvent.endTime} onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })}>
+                                <option value="">없음</option>
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const h = i + 1;
+                                    const val = h < 24 ? `${String(h).padStart(2, '0')}:00` : '23:59';
+                                    return <option key={i} value={val}>{h < 24 ? `${String(h).padStart(2, '0')}시` : '23:59'}</option>;
+                                })}
+                            </select>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                <button type="submit" className="btn-fixed-submit" style={{ flex: 1 }}>✅ 추가</button>
+                                <button type="button" className="btn-fixed-submit" style={{ flex: 1, backgroundColor: '#aaa' }} onClick={() => setAddModalOpen(false)}>닫기</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

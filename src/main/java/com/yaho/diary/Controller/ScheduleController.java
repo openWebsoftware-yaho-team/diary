@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import java.time.DayOfWeek;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/schedule")
 public class ScheduleController {
@@ -34,8 +37,13 @@ public class ScheduleController {
 
     @GetMapping("/timeline")
     public ResponseEntity<Map<String, Object>> getTimelineData() {
+        // 이번주 월~일 범위 계산
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+        LocalDate sunday = monday.plusDays(6);
+
         Map<String, Object> data = new HashMap<>();
-        data.put("scheduleList", scheduleRepository.findAll());
+        data.put("scheduleList", scheduleRepository.findByDateBetween(monday, sunday));
         data.put("fixedList", fixedScheduleRepository.findAll());
         return ResponseEntity.ok(data);
     }
@@ -92,6 +100,30 @@ public class ScheduleController {
         scheduleRepository.deleteById(id);
         Map<String, String> response = new HashMap<>();
         response.put("message", "일정이 정상적으로 삭제되었습니다.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/add")
+    public ResponseEntity<Map<String, String>> addSchedule(@RequestBody Map<String, Object> payload) {
+        Map<String, String> response = new HashMap<>();
+
+        String title = payload.get("title").toString();
+        LocalDate date = LocalDate.parse(payload.get("date").toString());
+        LocalTime startTime = LocalTime.parse(payload.get("startTime").toString());
+
+        LocalTime endTime = null;
+        if (payload.get("endTime") != null && !payload.get("endTime").toString().isBlank()) {
+            endTime = LocalTime.parse(payload.get("endTime").toString());
+        }
+
+        Schedule s = new Schedule();
+        s.setTitle(title);
+        s.setDate(date);
+        s.setStartTime(startTime);
+        s.setEndTime(endTime);
+        scheduleRepository.save(s);
+
+        response.put("message", "일정이 정상적으로 추가되었습니다.");
         return ResponseEntity.ok(response);
     }
 }
