@@ -17,16 +17,31 @@ function Timeline() {
     const [aiMessage, setAiMessage] = useState('');
     const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
 
-    // 모달 상태
+    // 수정 모달 상태
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState({ id: '', title: '', date: '', startTime: '', endTime: '' });
 
+    // 추가 모달 상태
+    const [addModalOpen, setAddModalOpen] = useState(false);
+    const [newEvent, setNewEvent] = useState({ title: '', date: '', startTime: '', endTime: '' });
+
     // 시간표 범위 상수 설정 (픽셀 매핑용)
     const PX_PER_HOUR = 60;
-    const startH = 9; 
 
     const dayMap = [1, 2, 3, 4, 5, 6, 0]; // 월요일부터 일요일순 정렬 매핑
     const dayLabels = ['월', '화', '수', '목', '금', '토', '일'];
+
+    // ✨ 전체 일정 기준으로 시작/종료 시간 동적 계산
+    const allTimes = [
+        ...scheduleList.map(s => s.startTime),
+        ...fixedList.map(f => f.startTime),
+        ...scheduleList.map(s => s.endTime),
+        ...fixedList.map(f => f.endTime),
+    ].filter(Boolean).map(t => parseInt(t.split(':')[0]));
+
+    const startH = allTimes.length > 0 ? Math.min(9, Math.min(...allTimes)) : 9;
+    const endH = allTimes.length > 0 ? Math.max(19, Math.max(...allTimes) + 1) : 19;
+    const hours = endH - startH;
 
     const loadData = () => {
         request('/schedule/timeline').then(data => {
@@ -63,6 +78,39 @@ function Timeline() {
         try {
             await request(`/schedule/delete/${selectedEvent.id}`, { method: 'DELETE' });
             setModalOpen(false);
+            loadData();
+        } catch (err) { alert(err.message); }
+    };
+
+    // 빈칸 클릭 → 일정 추가 모달
+    const handleGridClick = (e, dayIdx, screenIdx) => {
+        if (e.target.classList.contains('timetable-event')) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const clickedHour = Math.floor(y / PX_PER_HOUR) + startH;
+        const clickedTime = `${String(clickedHour).padStart(2, '0')}:00`;
+        const endTime = `${String(Math.min(clickedHour + 1, 23)).padStart(2, '0')}:00`;
+
+        // screenIdx: 0=월 ~ 5=토, 6=일 → JS 요일(1=월~6=토, 0=일)로 변환
+        const jsDay = dayIdx+1;
+        const today = new Date();
+        const todayDay = today.getDay();
+        const diff = jsDay - todayDay;
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + diff);
+        const dateStr = targetDate.toISOString().split('T')[0];
+
+        setNewEvent({ title: '', date: dateStr, startTime: clickedTime, endTime });
+        setAddModalOpen(true);
+    };
+
+    // 일정 추가 저장
+    const handleAddSchedule = async (e) => {
+        e.preventDefault();
+        try {
+            await request('/schedule/add', { method: 'POST', body: newEvent });
+            setAddModalOpen(false);
             loadData();
         } catch (err) { alert(err.message); }
     };
@@ -132,21 +180,28 @@ function Timeline() {
                                 <select name="dayOfWeek" required>
                                     {dayLabels.map((l, i) => <option key={i} value={i}>{l}요일</option>)}
                                 </select>
+                                {/* ✨ 시작시간: 00~23시 전체 */}
                                 <label>시작 시간</label>
                                 <select name="startTime" required>
-                                    <option value="09:00">09시</option><option value="10:00">10시</option>
-                                    <option value="11:00">11시</option><option value="12:00">12시</option>
-                                    <option value="13:00">13시</option><option value="14:00">14시</option>
-                                    <option value="15:00">15시</option><option value="16:00">16시</option>
-                                    <option value="17:00">17시</option><option value="18:00">18시</option>
+                                    {Array.from({ length: 24 }, (_, i) => (
+                                        <option key={i} value={`${String(i).padStart(2, '0')}:00`}>
+                                            {String(i).padStart(2, '0')}시
+                                        </option>
+                                    ))}
                                 </select>
+                                {/* ✨ 종료시간: 01~24시 전체 */}
                                 <label>종료 시간</label>
                                 <select name="endTime" required>
-                                    <option value="10:00">10시</option><option value="11:00">11시</option>
-                                    <option value="12:00">12시</option><option value="13:00">13시</option>
-                                    <option value="14:00">14시</option><option value="15:00">15시</option>
-                                    <option value="16:00">16시</option><option value="17:00">17시</option>
-                                    <option value="18:00">18시</option><option value="19:00">19시</option>
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                        const h = i + 1;
+                                        const val = h < 24
+                                            ? `${String(h).padStart(2, '0')}:00`
+                                            : '23:59';
+                                        const label = h < 24
+                                            ? `${String(h).padStart(2, '0')}시`
+                                            : '23:59';
+                                        return <option key={i} value={val}>{label}</option>;
+                                    })}
                                 </select>
                                 <label>카테고리</label>
                                 <select name="category" required>
@@ -173,7 +228,8 @@ function Timeline() {
                     <div className="timetable">
                         <div className="time-col">
                             <div className="time-header"></div>
-                            {Array.from({ length: 10 }).map((_, i) => (
+                            {/* ✨ 동적 시간 눈금 */}
+                            {Array.from({ length: hours }).map((_, i) => (
                                 <div key={i} className="time-slot">{String(startH + i).padStart(2, '0')}:00</div>
                             ))}
                         </div>
@@ -189,11 +245,11 @@ function Timeline() {
                             return (
                                 <div key={dayIdx} className={`day-col ${isToday ? 'is-today' : ''}`}>
                                     <div className="day-header">{dayLabels[idx]}</div>
-                                    <div className="day-grid" style={{ height: `${10 * PX_PER_HOUR}px` }}>
+                                    {/* ✨ 동적 높이 + 빈칸 클릭 */}
+                                    <div className="day-grid" style={{ height: `${hours * PX_PER_HOUR}px` }} onClick={(e) => handleGridClick(e, dayIdx, idx)}>
                                         {/* 일반 일정 렌더링 */}
                                         {daySchedules.map((s) => {
                                             const { top, height } = getPos(s.startTime, s.endTime);
-                                            // ✨ 흰색으로 깨지지 않도록 카테고리 고정 파스텔 컬러 적용
                                             const bgClass = categoryColors[s.category] || 'bg-pastel-green';
 
                                             return (
@@ -227,24 +283,61 @@ function Timeline() {
                 <div className="modal-overlay show">
                     <div className="modal-content">
                         <h3>📅 일정 수정</h3>
-                        <form onSubmit={handleUpdateSchedule}>
-                            <div className="form-group">
-                                <label>제목</label>
-                                <input type="text" value={selectedEvent.title} onChange={e => setSelectedEvent({ ...selectedEvent, title: e.target.value })} required />
+                        <form onSubmit={handleUpdateSchedule} className="fixed-add-form open" style={{ boxShadow: 'none', padding: 0, background: 'none' }}>
+                            <label>제목</label>
+                            <input type="text" value={selectedEvent.title} onChange={e => setSelectedEvent({ ...selectedEvent, title: e.target.value })} required />
+                            <label>시작 시간</label>
+                            <select value={selectedEvent.startTime} onChange={e => setSelectedEvent({ ...selectedEvent, startTime: e.target.value })} required>
+                                {Array.from({ length: 24 }, (_, i) => (
+                                    <option key={i} value={`${String(i).padStart(2, '0')}:00`}>{String(i).padStart(2, '0')}시</option>
+                                ))}
+                            </select>
+                            <label>종료 시간</label>
+                            <select value={selectedEvent.endTime} onChange={e => setSelectedEvent({ ...selectedEvent, endTime: e.target.value })}>
+                                <option value="">없음</option>
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const h = i + 1;
+                                    const val = h < 24 ? `${String(h).padStart(2, '0')}:00` : '23:59';
+                                    return <option key={i} value={val}>{h < 24 ? `${String(h).padStart(2, '0')}시` : '23:59'}</option>;
+                                })}
+                            </select>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                <button type="submit" className="btn-fixed-submit" style={{ flex: 1 }}>💾 저장</button>
+                                <button type="button" className="btn-fixed-submit" style={{ flex: 1, backgroundColor: '#e74c3c' }} onClick={handleDeleteSchedule}>🗑 삭제</button>
                             </div>
-                            <div className="form-group">
-                                <label>날짜</label>
-                                <input type="date" value={selectedEvent.date} onChange={e => setSelectedEvent({ ...selectedEvent, date: e.target.value })} required />
+                            <button type="button" className="btn-fixed-submit" style={{ width: '100%', marginTop: '6px', backgroundColor: '#aaa' }} onClick={() => setModalOpen(false)}>닫기</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 일정 추가 모달 */}
+            {addModalOpen && (
+                <div className="modal-overlay show">
+                    <div className="modal-content">
+                        <h3>📅 일정 추가</h3>
+                        <form onSubmit={handleAddSchedule} className="fixed-add-form open" style={{ boxShadow: 'none', padding: 0, background: 'none' }}>
+                            <label>제목</label>
+                            <input type="text" value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} required autoFocus />
+                            <label>시작 시간</label>
+                            <select value={newEvent.startTime} onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })} required>
+                                {Array.from({ length: 24 }, (_, i) => (
+                                    <option key={i} value={`${String(i).padStart(2, '0')}:00`}>{String(i).padStart(2, '00')}시</option>
+                                ))}
+                            </select>
+                            <label>종료 시간</label>
+                            <select value={newEvent.endTime} onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })}>
+                                <option value="">없음</option>
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const h = i + 1;
+                                    const val = h < 24 ? `${String(h).padStart(2, '0')}:00` : '23:59';
+                                    return <option key={i} value={val}>{h < 24 ? `${String(h).padStart(2, '0')}시` : '23:59'}</option>;
+                                })}
+                            </select>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                <button type="submit" className="btn-fixed-submit" style={{ flex: 1 }}>✅ 추가</button>
+                                <button type="button" className="btn-fixed-submit" style={{ flex: 1, backgroundColor: '#aaa' }} onClick={() => setAddModalOpen(false)}>닫기</button>
                             </div>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input type="time" value={selectedEvent.startTime} onChange={e => setSelectedEvent({ ...selectedEvent, startTime: e.target.value })} required />
-                                <input type="time" value={selectedEvent.endTime} onChange={e => setSelectedEvent({ ...selectedEvent, endTime: e.target.value })} />
-                            </div>
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                                <button type="submit" className="btn-auth">💾 저장</button>
-                                <button type="button" className="btn-auth" style={{ backgroundColor: '#e74c3c' }} onClick={handleDeleteSchedule}>🗑 삭제</button>
-                            </div>
-                            <button type="button" className="btn-auth" style={{ backgroundColor: '#ccc', marginTop: '5px' }} onClick={() => setModalOpen(false)}>닫기</button>
                         </form>
                     </div>
                 </div>
