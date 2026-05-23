@@ -1,85 +1,133 @@
 package com.yaho.diary.Controller;
 
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
+import com.yaho.diary.Dto.AiScheduleDto;
 import com.yaho.diary.Entity.Schedule;
 import com.yaho.diary.Repository.FixedScheduleRepository;
 import com.yaho.diary.Repository.ScheduleRepository;
 import com.yaho.diary.Service.OllamaScheduleService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
-@Controller
-public class ScheduleController 
-{
+import java.time.DayOfWeek;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/schedule")
+public class ScheduleController {
 
     private final OllamaScheduleService ollamaScheduleService;
     private final ScheduleRepository scheduleRepository;
     private final FixedScheduleRepository fixedScheduleRepository;
 
-    //생성자
-    public ScheduleController(OllamaScheduleService ollamaScheduleService, ScheduleRepository scheduleRepository, FixedScheduleRepository fixedScheduleRepository) 
-    {
+    public ScheduleController(
+            OllamaScheduleService ollamaScheduleService,
+            ScheduleRepository scheduleRepository,
+            FixedScheduleRepository fixedScheduleRepository
+    ) {
         this.ollamaScheduleService = ollamaScheduleService;
         this.scheduleRepository = scheduleRepository;
         this.fixedScheduleRepository = fixedScheduleRepository;
     }
 
-    // 타임라인 페이지 - 일반 일정, 고정 일정을 넘김
     @GetMapping("/timeline")
-    public String timelinePage(Model model) 
-    {
-        model.addAttribute("scheduleList", scheduleRepository.findAll());
-        model.addAttribute("fixedList", fixedScheduleRepository.findAll());
-        return "timeline";
+    public ResponseEntity<Map<String, Object>> getTimelineData() {
+        // 이번주 월~일 범위 계산
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+        LocalDate sunday = monday.plusDays(6);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("scheduleList", scheduleRepository.findByDateBetween(monday, sunday));
+        data.put("fixedList", fixedScheduleRepository.findAll());
+        return ResponseEntity.ok(data);
     }
 
-    //AI가 메세지에서 일정 추출 후 저장
-    @PostMapping("/schedule/ai")
-    public String aiSchedule(@RequestParam String message) throws Exception 
-    {
-        ollamaScheduleService.extractSchedule(message);
-        return "redirect:/timeline";
-    }
-
-    // 일정 수정
-    @PostMapping("/schedule/update")
-    public String updateSchedule(@RequestParam Long id, @RequestParam String title,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime) 
-        {
-        Optional<Schedule> found = scheduleRepository.findById(id); //id로 일정 조회
-        if (found.isPresent()) // 있으면 수정함
-        {
-            Schedule s = found.get(); //Optional에서 꺼내기
-            s.setTitle(title); s.setDate(date); // 제목, 날짜 수정
-            s.setStartTime(startTime); s.setEndTime(endTime); // 시작, 종료 시간 수정
-            scheduleRepository.save(s); 
-        }
-        return "redirect:/timeline";
-    }
-
-    // 일정 삭제
-    @GetMapping("/schedule/delete")
-    public String deleteSchedule(@RequestParam Long id) 
-    {
-        scheduleRepository.deleteById(id);
-        return "redirect:/timeline";
-    }
-
-    // 캘린더 페이지로 넘어감
+    // 캘린더 데이터 요청 시 고정 일정 데이터도 묶어서 반환
     @GetMapping("/calendar")
-    public String calendarPage(Model model) 
-    {
-        model.addAttribute("scheduleList", scheduleRepository.findAll());
-        return "calendar";
+    public ResponseEntity<Map<String, Object>> getCalendarData() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("scheduleList", scheduleRepository.findAll());
+        data.put("fixedList", fixedScheduleRepository.findAll()); // 고정 일정 추가
+        return ResponseEntity.ok(data);
+    }
+
+    @PostMapping("/ai")
+    public ResponseEntity<AiScheduleDto> aiSchedule(@RequestBody Map<String, String> payload) throws Exception {
+        String message = payload.get("message");
+        AiScheduleDto result = ollamaScheduleService.extractSchedule(message);
+        return ResponseEntity.ok(result);
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<Map<String, String>> updateSchedule(@RequestBody Map<String, Object> payload) {
+        Map<String, String> response = new HashMap<>();
+        
+        Long id = Long.valueOf(payload.get("id").toString());
+        String title = payload.get("title").toString();
+        String category = payload.getOrDefault("category", "기타").toString(); 
+        LocalDate date = LocalDate.parse(payload.get("date").toString());
+        LocalTime startTime = LocalTime.parse(payload.get("startTime").toString());
+        
+        LocalTime endTime = null;
+        if (payload.get("endTime") != null && !payload.get("endTime").toString().isBlank()) {
+            endTime = LocalTime.parse(payload.get("endTime").toString());
+        }
+
+        Optional<Schedule> found = scheduleRepository.findById(id);
+        if (found.isPresent()) {
+            Schedule s = found.get();
+            s.setTitle(title);
+            s.setCategory(category);
+            s.setDate(date);
+            s.setStartTime(startTime);
+            s.setEndTime(endTime);
+            scheduleRepository.save(s);
+            
+            response.put("message", "일정이 정상적으로 수정되었습니다.");
+            return ResponseEntity.ok(response);
+        }
+
+        response.put("message", "해당 일정을 찾을 수 없습니다.");
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Map<String, String>> deleteSchedule(@PathVariable Long id) {
+        scheduleRepository.deleteById(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "일정이 정상적으로 삭제되었습니다.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/add")
+    public ResponseEntity<Map<String, String>> addSchedule(@RequestBody Map<String, Object> payload) {
+        Map<String, String> response = new HashMap<>();
+
+        String title = payload.get("title").toString();
+        LocalDate date = LocalDate.parse(payload.get("date").toString());
+        LocalTime startTime = LocalTime.parse(payload.get("startTime").toString());
+        String category = payload.getOrDefault("category", "기타").toString(); // 이 줄 추가
+
+        LocalTime endTime = null;
+        if (payload.get("endTime") != null && !payload.get("endTime").toString().isBlank()) {
+            endTime = LocalTime.parse(payload.get("endTime").toString());
+        }
+
+        Schedule s = new Schedule();
+        s.setTitle(title);
+        s.setDate(date);
+        s.setStartTime(startTime);
+        s.setEndTime(endTime);
+        s.setCategory(category); // 이 줄 추가
+
+        scheduleRepository.save(s);
+        response.put("message", "일정이 정상적으로 추가되었습니다.");
+        return ResponseEntity.ok(response);
     }
 }

@@ -1,74 +1,55 @@
 package com.yaho.diary.Controller;
 
 import com.yaho.diary.Entity.Schedule;
+import com.yaho.diary.Entity.FixedSchedule;
 import com.yaho.diary.Repository.ScheduleRepository;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import com.yaho.diary.Repository.FixedScheduleRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-// 요일, 날짜 처리를 위해 가져옴
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors; //List 변환에 사용
+import java.util.Map;
+import java.util.stream.Collectors;
 
-@Controller
-public class DiaryController 
-{
+@RestController
+@RequestMapping("/api")
+public class DiaryController {
 
     private final ScheduleRepository scheduleRepository;
+    private final FixedScheduleRepository fixedScheduleRepository; // 고정일정 레포지토리 추가
 
-    public DiaryController(ScheduleRepository scheduleRepository) 
-    {
+    public DiaryController(ScheduleRepository scheduleRepository, FixedScheduleRepository fixedScheduleRepository) {
         this.scheduleRepository = scheduleRepository;
+        this.fixedScheduleRepository = fixedScheduleRepository;
     }
 
-    @GetMapping("/")
-    public String home(Model model) 
-    {
+    @GetMapping("/diary")
+    public ResponseEntity<Map<String, Object>> home() {
         LocalDate today = LocalDate.now();
-        
-        // 이번주 월요일, 일요일 구하기
         LocalDate mon = today.with(DayOfWeek.MONDAY);
         LocalDate sun = mon.plusDays(6);
 
         List<Schedule> allSchedules = scheduleRepository.findAll();
 
-        // 전체 일정 중 이번주(월~일) 해당하는 것만 필터링 후 날짜/시간 순으로 정렬
+        // 이번 주 일반 일정 필터링
         List<Schedule> weekSchedules = allSchedules.stream()
-                // 1주일 필터
                 .filter(s -> !s.getDate().isBefore(mon) && !s.getDate().isAfter(sun))
-                .sorted((a, b) -> 
-                {   //날짜 오름차순으로 비교
-                    int dateCmp = a.getDate().compareTo(b.getDate());
+                .collect(Collectors.toList());
 
-                    //날짜가 다르면 날짜 기준으로 정렬 끝
-                    if (dateCmp != 0) return dateCmp;
+        // 고정 일정 전체 목록 가져오기
+        List<FixedSchedule> fixedList = fixedScheduleRepository.findAll();
 
-                    // 시작 시간이 없으면(null) 매 뒤로
-                    if (a.getStartTime() == null) return 1;
-                    if (b.getStartTime() == null) return -1;
+        Map<String, Object> response = new HashMap<>();
+        response.put("weekSchedules", weekSchedules);
+        response.put("fixedList", fixedList); // 고정 일정 리스트 주입
+        response.put("today", today.toString());
+        response.put("mon", mon.toString()); // 리액트 연산용 월요일 기본 날짜
 
-                    //날짜 같으면 시작 시간 오름차순
-                    return a.getStartTime().compareTo(b.getStartTime());
-                }).collect(Collectors.toList());
-                //결과를 List로 변환
-
-        // 이번주 일정 중 오늘 날짜와 일치하는 것만 카운트
-        long todayCount = weekSchedules.stream().filter(s -> s.getDate().equals(today)).count();
-
-        // 뷰에 데이터 전달
-        model.addAttribute("weekSchedules", weekSchedules); // 이벉주 전체 일정
-        model.addAttribute("weekTotal", weekSchedules.size()); //이번주 일정 총 개수
-        model.addAttribute("todayCount", todayCount); // 오늘 일정 개수
-        model.addAttribute("today", today); // 오늘의 날짜
-
-        return "index";
-    }
-
-    @GetMapping("/login")
-    public String login() 
-    {
-        return "login";
+        return ResponseEntity.ok(response);
     }
 }
