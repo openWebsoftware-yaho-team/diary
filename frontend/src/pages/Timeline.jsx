@@ -16,17 +16,17 @@ function Timeline() {
     const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
 
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedEvent, setSelectedEvent] = useState({ id: '', title: '', date: '', startTime: '', endTime: '', category: '기타' });
+    const [selectedEvent, setSelectedEvent] = useState({ id: '', title: '', date: '', startTime: '', endTime: '', category: '기타', isCompleted: false });
 
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [newEvent, setNewEvent] = useState({ title: '', date: '', startTime: '', endTime: '', category: '기타' });
 
-    // 드래그/리사이즈 상태
     const dragRef = useRef(null);
-    const wasResizedRef = useRef(false); // 리사이즈 후 클릭 차단용
+    const wasResizedRef = useRef(false);
     const [draggingId, setDraggingId] = useState(null);
     const [resizingId, setResizingId] = useState(null);
     const [ghost, setGhost] = useState(null);
+    const [completedFixedKeys, setCompletedFixedKeys] = useState([]);
 
     const PX_PER_HOUR = 60;
     const dayMap = [1, 2, 3, 4, 5, 6, 0];
@@ -44,27 +44,29 @@ function Timeline() {
     const hours = endH - startH;
 
     const loadData = () => {
-        request('/schedule/timeline').then(data => {
+        return request('/schedule/timeline').then(data => {
             setScheduleList(data.scheduleList);
             setFixedList(data.fixedList);
+            setCompletedFixedKeys(data.completedFixedKeys || []);
         });
     };
 
     useEffect(() => { loadData(); }, []);
 
-    // screenIdx(0=월~6=일) → 이번주 날짜 (기존 코드 방식 그대로)
-    const screenIdxToDateStr = (screenIdx, dayIdx) => {
-        const jsDay = dayIdx; // dayMap[screenIdx] = dayIdx (1=월~6=토, 0=일)
+    const dayIdxToDateStr = (dayIdx) => {
         const today = new Date();
-        const diff = jsDay - today.getDay();
-        const target = new Date(today);
-        target.setDate(today.getDate() + diff);
-        return target.toISOString().split('T')[0];
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+        const target = new Date(monday);
+        target.setDate(monday.getDate() + (dayIdx === 0 ? 6 : dayIdx - 1));
+        const y = target.getFullYear();
+        const m = String(target.getMonth() + 1).padStart(2, '0');
+        const d = String(target.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     };
 
-    // px → 시간 문자열 (15분 단위 스냅)
     const pxToTime = (px) => {
-        const totalMinutes = Math.round((px / PX_PER_HOUR) * 60 / 15) * 15;
+        const totalMinutes = Math.round((px / PX_PER_HOUR) * 60 / 60) * 60;
         const h = Math.min(Math.floor(totalMinutes / 60) + startH, 23);
         const m = totalMinutes % 60;
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -108,15 +110,7 @@ function Timeline() {
         const clickedHour = Math.floor(y / PX_PER_HOUR) + startH;
         const clickedTime = `${String(clickedHour).padStart(2, '0')}:00`;
         const endTime = `${String(Math.min(clickedHour + 1, 23)).padStart(2, '0')}:00`;
-
-        // 기존 코드 방식 그대로
-        const jsDay = dayIdx + 1;
-        const today = new Date();
-        const diff = jsDay - today.getDay();
-        const targetDate = new Date(today);
-        targetDate.setDate(today.getDate() + diff);
-        const dateStr = targetDate.toISOString().split('T')[0];
-
+        const dateStr = dayIdxToDateStr(dayIdx);
         setNewEvent({ title: '', date: dateStr, startTime: clickedTime, endTime, category: '기타' });
         setAddModalOpen(true);
     };
@@ -163,7 +157,6 @@ function Timeline() {
         return { top: `${top}px`, height: `${height}px` };
     };
 
-    // ── 드래그 이동 ──────────────────────────────────────
     const handleDragStart = (e, schedule, screenIdx, dayIdx) => {
         e.stopPropagation();
         e.preventDefault();
@@ -196,8 +189,6 @@ function Timeline() {
             const dx = ev.clientX - dragRef.current.startMouseX;
             const dy = ev.clientY - dragRef.current.startMouseY;
             if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.didDrag = true;
-
-            // 고스트 블록 위치 업데이트
             setGhost({
                 x: ev.clientX - 10,
                 y: ev.clientY - dragRef.current.offsetY,
@@ -217,11 +208,9 @@ function Timeline() {
             const didDrag = dragRef.current?.didDrag;
             if (!didDrag) { dragRef.current = null; return; }
 
-            // 드래그 후 onClick/handleGridClick 차단 (200ms)
             wasResizedRef.current = true;
             setTimeout(() => { wasResizedRef.current = false; }, 200);
 
-            // 드롭된 day-col 찾기 (이번주 내로 제한)
             const dayCols = document.querySelectorAll('.day-col');
             let targetScreenIdx = dragRef.current.originalScreenIdx;
             let targetDayIdx = dayMap[targetScreenIdx];
@@ -233,17 +222,21 @@ function Timeline() {
                 }
             });
 
-            // 드롭된 grid y → 시간 계산
             const gridEls = document.querySelectorAll('.day-grid');
             const gridEl = gridEls[targetScreenIdx];
             if (!gridEl) { dragRef.current = null; return; }
 
             const gridRect = gridEl.getBoundingClientRect();
             const rawY = ev.clientY - gridRect.top - dragRef.current.offsetY;
+
+            if (ev.clientY < gridRect.top || ev.clientY > gridRect.bottom) {
+                dragRef.current = null;
+                return;
+            }
+
             const clampedY = Math.max(0, rawY);
             const newStartTime = pxToTime(clampedY);
 
-            // duration 유지해서 종료시간 계산
             let newEndTime = dragRef.current.originalEnd;
             if (dragRef.current.originalEnd) {
                 const [sh, sm] = dragRef.current.originalStart.split(':').map(Number);
@@ -256,12 +249,7 @@ function Timeline() {
                 newEndTime = `${String(newEH).padStart(2, '0')}:${String(newEM).padStart(2, '0')}`;
             }
 
-            // 이번주 날짜 계산 (+1 보정)
-            const today = new Date();
-            const diff = (targetDayIdx + 1) - today.getDay();
-            const targetDate = new Date(today);
-            targetDate.setDate(today.getDate() + diff);
-            const newDate = targetDate.toISOString().split('T')[0];
+            const newDate = dayIdxToDateStr(targetDayIdx);
 
             const payload = {
                 id: dragRef.current.id,
@@ -269,12 +257,21 @@ function Timeline() {
                 category: dragRef.current.category,
                 date: newDate,
                 startTime: newStartTime,
-                endTime: newEndTime,
+                endTime: newEndTime === '' ? null : newEndTime,
             };
-            dragRef.current = null;
+
             try {
                 await request('/schedule/update', { method: 'PUT', body: payload });
-                loadData();
+                await loadData();
+                setSelectedEvent({
+                    id: payload.id,
+                    title: payload.title,
+                    date: payload.date,
+                    startTime: payload.startTime,
+                    endTime: payload.endTime || '',
+                    category: payload.category,
+                    isCompleted: false,
+                });
             } catch (err) { alert(err.message); }
         };
 
@@ -282,7 +279,6 @@ function Timeline() {
         window.addEventListener('mouseup', onMouseUp);
     };
 
-    // ── 리사이즈 ─────────────────────────────────────────
     const handleResizeStart = (e, schedule) => {
         e.stopPropagation();
         e.preventDefault();
@@ -290,8 +286,8 @@ function Timeline() {
         const gridEl = e.currentTarget.closest('.day-grid');
         const gridRect = gridEl.getBoundingClientRect();
         const startPx = ((() => {
-            const [sh, sm] = schedule.startTime.substring(0,5).split(':').map(Number);
-            return ((sh + sm/60) - startH) * PX_PER_HOUR;
+            const [sh, sm] = schedule.startTime.substring(0, 5).split(':').map(Number);
+            return ((sh + sm / 60) - startH) * PX_PER_HOUR;
         })());
 
         dragRef.current = {
@@ -332,10 +328,8 @@ function Timeline() {
 
             if (!dragRef.current?.didDrag) { dragRef.current = null; return; }
 
-            // 필요한 데이터 먼저 저장
             const { id, title, date, originalStart, category } = dragRef.current;
 
-            // 클릭 이벤트 차단 (200ms)
             wasResizedRef.current = true;
             dragRef.current = null;
             setTimeout(() => { wasResizedRef.current = false; }, 200);
@@ -345,7 +339,6 @@ function Timeline() {
             const clampedY = Math.max(0, rawY);
             const newEndTime = pxToTime(clampedY);
 
-            // 최소 15분 보장
             const [sh, sm] = originalStart.split(':').map(Number);
             const [eh, em] = newEndTime.split(':').map(Number);
             if (eh * 60 + em <= sh * 60 + sm + 15) return;
@@ -379,7 +372,6 @@ function Timeline() {
         <>
             <div className="section-title">주간 일정 관리 &amp; 시간표</div>
 
-            {/* 고스트 블록 (드래그 미리보기) */}
             {ghost && (
                 <div
                     className={`timetable-event ${ghost.bgClass}`}
@@ -434,9 +426,10 @@ function Timeline() {
                                     })}
                                 </select>
                                 <label>카테고리</label>
-                                <select name="category" required>
+                                <select name="category" required defaultValue="기타">
                                     {['회의', '공부', '약속', '운동', '기타'].map(v => <option key={v} value={v}>{v}</option>)}
                                 </select>
+                                <label>시작일 (비워두면 이번주부터)</label><input type="date" name="startDate" />
                                 <label>기한 (비워두면 무기한)</label><input type="date" name="endDate" />
                                 <button type="submit" className="btn-fixed-submit">✅ 추가</button>
                             </form>
@@ -464,7 +457,13 @@ function Timeline() {
                         {dayMap.map((dayIdx, idx) => {
                             const isToday = currentDayOfWeek === dayIdx;
                             const daySchedules = scheduleList.filter(s => new Date(s.date).getDay() === dayIdx);
-                            const dayFixed = fixedList.filter(f => f.dayOfWeek === (dayIdx === 0 ? 6 : dayIdx - 1));
+                            const dayFixed = fixedList.filter(f => {
+                                if (f.dayOfWeek !== (dayIdx === 0 ? 6 : dayIdx - 1)) return false;
+                                const dateStr = dayIdxToDateStr(dayIdx);
+                                if (f.startDate && f.startDate > dateStr) return false;
+                                if (f.endDate && f.endDate < dateStr) return false;
+                                return true;
+                            });
 
                             return (
                                 <div key={dayIdx} className={`day-col ${isToday ? 'is-today' : ''}`}>
@@ -482,20 +481,29 @@ function Timeline() {
                                             return (
                                                 <div
                                                     key={s.id}
-                                                    className={`timetable-event ${bgClass}`}
+                                                    className={`timetable-event ${bgClass} ${s.isCompleted ? 'is-completed' : ''}`}
                                                     style={{
                                                         top, height,
                                                         cursor: isDragging ? 'grabbing' : 'grab',
-                                                        opacity: isDragging ? 0.3 : 0.85,
+                                                        opacity: isDragging ? 0.3 : 0.8,
                                                         userSelect: 'none',
                                                         position: 'absolute',
+                                                        zIndex: isDragging ? 10 : 1,
                                                     }}
                                                     onMouseDown={(e) => handleDragStart(e, s, idx, dayIdx)}
                                                     onClick={(e) => {
                                                         if (dragRef.current?.didDrag) { e.stopPropagation(); return; }
                                                         if (wasResizedRef.current) { e.stopPropagation(); return; }
                                                         e.stopPropagation();
-                                                        setSelectedEvent({ id: s.id, title: s.title, date: s.date, startTime: s.startTime.substring(0, 5), endTime: s.endTime ? s.endTime.substring(0, 5) : '', category: s.category || '기타' });
+                                                        setSelectedEvent({
+                                                            id: s.id,
+                                                            title: s.title,
+                                                            date: s.date,
+                                                            startTime: s.startTime.substring(0, 5),
+                                                            endTime: s.endTime ? s.endTime.substring(0, 5) : '',
+                                                            category: s.category || '기타',
+                                                            isCompleted: s.isCompleted || false,
+                                                        });
                                                         setModalOpen(true);
                                                     }}
                                                 >
@@ -517,7 +525,7 @@ function Timeline() {
                                         {dayFixed.map((f) => {
                                             const { top, height } = getPos(f.startTime, f.endTime);
                                             return (
-                                                <div key={f.id} className="timetable-event bg-pastel-yellow" style={{ top, height, opacity: 0.7, borderLeft: '3px solid #C5A065', fontSize: '11px', position: 'absolute' }}>
+                                                <div key={f.id} className={`timetable-event ${categoryColors[f.category] || 'bg-pastel-yellow'} ${completedFixedKeys.includes(`${f.id}-${dayIdxToDateStr(dayIdx)}`) ? 'is-completed' : ''}`} style={{ top, height, opacity: 0.7, borderLeft: '3px solid #C5A065', fontSize: '11px', position: 'absolute' }}>
                                                     📌 {f.title}
                                                 </div>
                                             );
@@ -550,8 +558,12 @@ function Timeline() {
                             <select value={selectedEvent.category} onChange={e => setSelectedEvent({ ...selectedEvent, category: e.target.value })} required>
                                 {['회의', '공부', '약속', '운동', '기타'].map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
+<div className="complete-row">
+    <span style={{ fontSize: '13px', color: '#888' }}>완료</span>
+    <input type="checkbox" className="task-checkbox" checked={selectedEvent.isCompleted || false} onChange={e => setSelectedEvent({ ...selectedEvent, isCompleted: e.target.checked })} />
+</div>
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button type="submit" className="btn-fixed-submit" style={{ flex: 1 }}>💾 저장</button>
+<button type="submit" className="btn-fixed-submit" style={{ flex: 1, backgroundColor: '#4caf50' }}>💾 저장</button>
                                 <button type="button" className="btn-fixed-submit" style={{ flex: 1, backgroundColor: '#e74c3c' }} onClick={handleDeleteSchedule}>🗑 삭제</button>
                             </div>
                             <button type="button" className="btn-fixed-submit" style={{ width: '100%', marginTop: '6px', backgroundColor: '#aaa' }} onClick={() => setModalOpen(false)}>닫기</button>

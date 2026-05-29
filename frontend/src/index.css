@@ -473,3 +473,28 @@ body.dark-theme .section-title {
 body.dark-theme .completed-task span {
     color: #66666e !important; 
 }
+
+.timetable-event.is-completed {
+    text-decoration: line-through !important;
+    text-decoration-color: red !important;
+    text-decoration-thickness: 2px !important;
+    opacity: 0.5 !important;
+}
+.cal-event-chip.is-completed {
+    text-decoration: line-through !important;
+    text-decoration-color: red !important;
+    text-decoration-thickness: 2px !important;
+    opacity: 0.5 !important;
+}
+
+.complete-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 10px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}

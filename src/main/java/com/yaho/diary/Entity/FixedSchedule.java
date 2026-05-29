@@ -26,5 +26,7 @@ public class FixedSchedule {
 
     private String category;
 
-    private LocalDate endDate; // null이면 무기한
+    private LocalDate startDate;
+    
+    private LocalDate endDate;
 }

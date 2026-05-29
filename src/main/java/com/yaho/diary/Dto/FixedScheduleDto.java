@@ -13,5 +13,6 @@ public class FixedScheduleDto
     private String startTime;    // HH:mm
     private String endTime;      // HH:mm
     private String category;
-    private String endDate;      // null이면 무기한으로 처리
+    private String startDate;
+    private String endDate;
 }

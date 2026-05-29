@@ -26,4 +26,7 @@ public class Schedule {
     private LocalTime endTime;
 
     private String category;
+
+    private Boolean isCompleted=false;
+
 }

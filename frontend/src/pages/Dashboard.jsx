@@ -52,14 +52,17 @@ function Dashboard() {
                 }));
 
                 // ✨ 고정 일정에 isCompleted 상태 추가
+                const completedFixedKeys = new Set(data.completedFixedKeys || []);
+
                 const expandedFixed = [];
                 weekDates.forEach((date, index) => {
-                    const matchingFixed = (data.fixedList || []).filter(f => {
-                        if (f.dayOfWeek !== index) return false;
-                        if (f.endDate && f.endDate < date) return false; 
-                        return true;
-                    });
-
+                const matchingFixed = (data.fixedList || []).filter(f => {
+                    if (f.dayOfWeek !== index) return false;
+                    if (f.startDate && f.startDate > date) return false;
+                    if (f.endDate && f.endDate < date) return false;
+                    return true;
+                });
+                    
                     matchingFixed.forEach(f => {
                         expandedFixed.push({
                             id: `fixed-${f.id}-${date}`,
@@ -69,7 +72,7 @@ function Dashboard() {
                             title: `📌 ${f.title}`,
                             category: f.category,
                             isFixed: true,
-                            isCompleted: false
+                            isCompleted: completedFixedKeys.has(`${f.id}-${date}`)
                         });
                     });
                 });
@@ -101,15 +104,20 @@ function Dashboard() {
     }, []);
 
     // ✨ 체크박스 클릭 시 완료 상태 토글 함수
-    const handleToggleComplete = (id) => {
-        setCombinedSchedules(prevSchedules => 
-            prevSchedules.map(schedule => 
-                schedule.id === id 
-                    ? { ...schedule, isCompleted: !schedule.isCompleted } 
+    const handleToggleComplete = async (id, isFixed, date) => {
+        if (isFixed) {
+            const fixedId = String(id).split('-')[1]; // "fixed-3-2026-05-29" → "3"
+            await request('/schedule/fixed-complete', { method: 'PUT', body: { fixedId, date } });
+        } else {
+            await request(`/schedule/complete/${id}`, { method: 'PUT' });
+        }
+        setCombinedSchedules(prevSchedules =>
+            prevSchedules.map(schedule =>
+                schedule.id === id
+                    ? { ...schedule, isCompleted: !schedule.isCompleted }
                     : schedule
             )
         );
-        // 필요시 백엔드 연동: request(`/schedule/${id}/complete`, { method: 'PUT' });
     };
 
     if (loading) return <div className="no-schedule">로딩 중...🌿</div>;
@@ -170,7 +178,7 @@ function Dashboard() {
                                             type="checkbox" 
                                             className="task-checkbox"
                                             checked={s.isCompleted} 
-                                            onChange={() => handleToggleComplete(s.id)} 
+                                            onChange={() => handleToggleComplete(s.id, s.isFixed, s.date)}
                                         />
                                     </td>
                                     <td>{s.date}</td>

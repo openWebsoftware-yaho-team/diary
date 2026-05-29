@@ -29,6 +29,11 @@ public class FixedScheduleController {
         fs.setStartTime(dto.getStartTime());
         fs.setEndTime(dto.getEndTime());
         fs.setCategory(dto.getCategory());
+        if (dto.getStartDate() != null && !dto.getStartDate().isBlank()) {
+            fs.setStartDate(LocalDate.parse(dto.getStartDate()));
+        } else {
+            fs.setStartDate(LocalDate.now().with(java.time.DayOfWeek.MONDAY));
+        }
         if (dto.getEndDate() != null && !dto.getEndDate().isBlank()) {
             fs.setEndDate(LocalDate.parse(dto.getEndDate()));
         }
