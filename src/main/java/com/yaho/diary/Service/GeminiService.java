@@ -15,6 +15,10 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yaho.diary.Dto.AiChatMessageDto;
+import com.yaho.diary.Dto.AiChatResponseDto;
+import com.yaho.diary.Dto.AiProposalOptionDto;
+import com.yaho.diary.Dto.AiProposedScheduleItem;
 import com.yaho.diary.Dto.AiScheduleDto;
 import com.yaho.diary.Entity.FixedSchedule;
 import com.yaho.diary.Entity.Schedule;
@@ -45,6 +49,145 @@ public class GeminiService {
         this.objectMapper = new ObjectMapper();
     }
 
+    /**
+     * 챗봇 상담: 일정 제안만 생성 (DB 저장 없음)
+     */
+    public AiChatResponseDto proposeSchedule(
+            String userMessage,
+            List<AiChatMessageDto> history,
+            List<AiProposalOptionDto> currentProposals
+    ) throws Exception {
+        LocalDate today = LocalDate.now();
+        LocalDate mon = today.with(DayOfWeek.MONDAY);
+        LocalDate sun = mon.plusDays(6);
+
+        String todayStr = today + " (" + today.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN) + ")";
+        String now = LocalTime.now().withSecond(0).withNano(0).toString();
+        String weekInfo = makeWeekInfo(mon);
+        String fixedInfo = makeFixedInfo(today);
+        String existingInfo = makeExistingSchedulesInfo(mon, sun);
+        String chatHistory = makeChatHistory(history);
+        String draftInfo = makeCurrentDraftInfo(currentProposals);
+
+        String prompt = """
+                너는 친절한 주간 일정 코치 AI야.
+                사용자와 대화하며 시간표 초안을 함께 다듬어. 아직 DB 저장 전이므로 반드시 JSON만 출력. 설명·코드블럭 금지.
+
+                현재 날짜: %s
+                현재 시간: %s
+                %s
+
+                기존 고정 일정:
+                %s
+
+                이번 주에 이미 등록된 일반 일정:
+                %s
+
+                %s
+
+                %s
+
+                반환 형식:
+                {
+                  "reply": "자연스러운 한국어 답변 (변경 사항을 짧게 설명)",
+                  "proposals": [
+                    {
+                      "label": "안 1 제목 (예: 일찍 자는 패턴)",
+                      "items": [
+                        {
+                          "title": "일정 제목",
+                          "date": "YYYY-MM-DD",
+                          "startTime": "HH:mm",
+                          "endTime": "HH:mm",
+                          "category": "회의|공부|약속|운동|기타"
+                        }
+                      ]
+                    }
+                  ]
+                }
+
+                규칙:
+                1. proposals[].items 날짜는 이번 주(월~일)만
+                2. 고정·기존 일정과 겹치지 않게
+                3. category는 회의, 공부, 약속, 운동, 기타 중 하나
+                4. endTime 미정이면 startTime + 1시간
+                5. 시간표 불필요한 질문이면 proposals는 빈 배열 []
+                6. 기본은 proposals 1개(대화로 수정·추가 요청 시 이전 초안을 반영해 전체를 다시 작성)
+                7. 사용자가 "두 가지 안", "비교" 등을 원할 때만 proposals 2개 (서로 다른 전략, 내용이 겹치면 안 됨)
+                8. 수면·식사·휴식 포함 가능, 하루당 3~8블록 권장
+                9. JSON 객체만 출력
+
+                사용자 입력:
+                %s
+                """.formatted(todayStr, now, weekInfo, fixedInfo, existingInfo, chatHistory, draftInfo, userMessage);
+
+        String rawJson = callGemini(prompt);
+        System.out.println("Gemini 제안 결과:");
+        System.out.println(rawJson);
+
+        AiChatResponseDto response = objectMapper.readValue(rawJson, AiChatResponseDto.class);
+        normalizeProposals(response);
+        return response;
+    }
+
+    private void normalizeProposals(AiChatResponseDto response) {
+        if (response.getProposals() != null && !response.getProposals().isEmpty()) {
+            return;
+        }
+        if (response.getItems() != null && !response.getItems().isEmpty()) {
+            AiProposalOptionDto single = new AiProposalOptionDto();
+            single.setLabel("제안 시간표");
+            single.setItems(response.getItems());
+            response.setProposals(List.of(single));
+        }
+    }
+
+    private String makeCurrentDraftInfo(List<AiProposalOptionDto> currentProposals) {
+        if (currentProposals == null || currentProposals.isEmpty()) {
+            return "현재 화면의 제안 초안: 없음 (새로 작성)";
+        }
+
+        try {
+            return "현재 화면의 제안 초안 (사용자가 수정을 요청하면 이를 기반으로 proposals 전체를 갱신):\n"
+                    + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(currentProposals);
+        } catch (Exception e) {
+            return "현재 화면의 제안 초안: (파싱 불가)";
+        }
+    }
+
+    /**
+     * 사용자가 승인한 제안 일정을 타임라인(DB)에 반영
+     */
+    public int applyProposal(List<AiProposedScheduleItem> items) {
+        if (items == null || items.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (AiProposedScheduleItem item : items) {
+            if (item.getDate() == null || item.getDate().isBlank()
+                    || item.getStartTime() == null || item.getStartTime().isBlank()) {
+                continue;
+            }
+
+            Schedule s = new Schedule();
+            s.setTitle(item.getTitle() != null && !item.getTitle().isBlank() ? item.getTitle() : "일정");
+            s.setDate(LocalDate.parse(item.getDate()));
+            s.setStartTime(LocalTime.parse(item.getStartTime()));
+
+            if (item.getEndTime() != null && !item.getEndTime().isBlank()) {
+                s.setEndTime(LocalTime.parse(item.getEndTime()));
+            } else {
+                s.setEndTime(LocalTime.parse(item.getStartTime()).plusHours(1));
+            }
+
+            s.setCategory(item.getCategory() != null && !item.getCategory().isBlank() ? item.getCategory() : "기타");
+            scheduleRepository.save(s);
+            count++;
+        }
+        return count;
+    }
+
     public AiScheduleDto extractSchedule(String userMessage) throws Exception {
 
         LocalDate today = LocalDate.now();
@@ -57,16 +200,7 @@ public class GeminiService {
 
         LocalDate mon = today.with(DayOfWeek.MONDAY);
 
-        String weekInfo = String.format(
-                "이번주 날짜:\n월요일: %s\n화요일: %s\n수요일: %s\n목요일: %s\n금요일: %s\n토요일: %s\n일요일: %s",
-                mon,
-                mon.plusDays(1),
-                mon.plusDays(2),
-                mon.plusDays(3),
-                mon.plusDays(4),
-                mon.plusDays(5),
-                mon.plusDays(6)
-        );
+        String weekInfo = makeWeekInfo(mon);
 
         String now =
                 LocalTime.now()
@@ -138,6 +272,58 @@ public class GeminiService {
         handleSchedule(dto);
 
         return dto;
+    }
+
+    private String makeWeekInfo(LocalDate mon) {
+        return String.format(
+                "이번주 날짜:\n월요일: %s\n화요일: %s\n수요일: %s\n목요일: %s\n금요일: %s\n토요일: %s\n일요일: %s",
+                mon,
+                mon.plusDays(1),
+                mon.plusDays(2),
+                mon.plusDays(3),
+                mon.plusDays(4),
+                mon.plusDays(5),
+                mon.plusDays(6)
+        );
+    }
+
+    private String makeExistingSchedulesInfo(LocalDate mon, LocalDate sun) {
+        List<Schedule> weekSchedules = scheduleRepository.findByDateBetween(mon, sun);
+        if (weekSchedules.isEmpty()) {
+            return "없음";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Schedule s : weekSchedules) {
+            sb.append("- ")
+                    .append(s.getDate())
+                    .append(" ")
+                    .append(s.getTitle())
+                    .append(" ")
+                    .append(s.getStartTime())
+                    .append("~")
+                    .append(s.getEndTime() != null ? s.getEndTime() : "")
+                    .append(" (")
+                    .append(s.getCategory())
+                    .append(")\n");
+        }
+        return sb.toString();
+    }
+
+    private String makeChatHistory(List<AiChatMessageDto> history) {
+        if (history == null || history.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder("이전 대화:\n");
+        int start = Math.max(0, history.size() - 6);
+        for (int i = start; i < history.size(); i++) {
+            AiChatMessageDto m = history.get(i);
+            if (m.getRole() == null || m.getContent() == null) continue;
+            String label = "user".equals(m.getRole()) ? "사용자" : "AI";
+            sb.append(label).append(": ").append(m.getContent()).append("\n");
+        }
+        return sb.toString();
     }
 
     private String makeFixedInfo(LocalDate today) {

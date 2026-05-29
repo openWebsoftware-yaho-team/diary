@@ -131,6 +131,6 @@ public class ScheduleController {
 
         scheduleRepository.save(s);
         response.put("message", "일정이 정상적으로 추가되었습니다.");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(response); 
     }
 }
