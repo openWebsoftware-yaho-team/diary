@@ -3,70 +3,46 @@ import { Link } from 'react-router-dom';
 import { request } from '../api';
 
 const CATEGORY_COLORS = {
-    '회의': 'bg-pastel-blue',
-    '공부': 'bg-pastel-green',
-    '약속': 'bg-pastel-orange',
-    '운동': 'bg-pastel-purple',
-    '기타': 'bg-pastel-yellow',
+    '회의': 'bg-pastel-blue', '공부': 'bg-pastel-green', '약속': 'bg-pastel-orange', '운동': 'bg-pastel-purple', '기타': 'bg-pastel-yellow',
 };
 
 const EXAMPLE_PROMPTS = [
-    '이번 주 공부·운동·휴식 균형 맞춘 시간표 짜줘',
-    '11시에 자면 내일 일정 어떻게 짜면 좋을까?',
-    '운동은 오전·공부는 오후로 두 가지 안 비교해줘',
+    ' 내일 오전은 비워두고 오후 위주로 채워줘',
+    ' 이번 주 공부·운동·휴식 균형 맞춘 시간표 짜줘',
+    ' 운동 스케줄을 저녁 시간대로 다 옮겨줄래?',
 ];
 
 function formatDateLabel(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T12:00:00');
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    return `${dateStr} (${days[d.getDay()]})`;
+    return `${dateStr} (${['일', '월', '화', '수', '목', '금', '토'][d.getDay()]})`;
 }
 
 function ProposalCard({ option, index, onApply, applying, applyIndex }) {
-    const items = option?.items || [];
-    if (!items.length) return null;
-
-    const byDate = items.reduce((acc, item) => {
+    if (!option?.items?.length) return null;
+    const byDate = option.items.reduce((acc, item) => {
         const key = item.date || '날짜 미정';
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(item);
-        return acc;
+        if (!acc[key]) acc[key] = []; acc[key].push(item); return acc;
     }, {});
 
-    const isApplying = applying && applyIndex === index;
-
     return (
-        <div className="gemini-proposal-card">
-            <div className="gemini-proposal-title">
-                {option.label || `안 ${index + 1}`}
-            </div>
+        <div className="white-card" style={{ padding: '16px', marginBottom: '16px', border: '1px solid var(--border-color)', background: 'var(--bg-body)' }}>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--point-gold)', marginBottom: '12px' }}>📋 {option.label || `제안 안 ${index + 1}`}</div>
             {Object.entries(byDate).map(([date, dayItems]) => (
-                <div key={date} className="gemini-proposal-day">
-                    <div className="gemini-proposal-date">{formatDateLabel(date)}</div>
-                    {dayItems
-                        .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
-                        .map((item, i) => (
-                            <div
-                                key={`${date}-${i}`}
-                                className={`gemini-proposal-item ${CATEGORY_COLORS[item.category] || 'bg-pastel-green'}`}
-                            >
-                                <span className="gemini-proposal-time">
-                                    {item.startTime?.substring(0, 5)} ~ {item.endTime?.substring(0, 5)}
-                                </span>
-                                <span className="gemini-proposal-label">{item.title}</span>
-                                <span className="gemini-proposal-cat">{item.category || '기타'}</span>
+                <div key={date} style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-light)', marginBottom: '6px', borderBottom: '1px dashed var(--border-color)' }}>{formatDateLabel(date)}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {dayItems.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')).map((item, i) => (
+                            <div key={i} className={`timetable-event ${CATEGORY_COLORS[item.category] || 'bg-pastel-green'}`} style={{ position: 'relative', padding: '8px 10px', borderRadius: '8px', display: 'block', boxShadow: 'none' }}>
+                                <div style={{ fontSize: '11px', opacity: 0.8 }}>{item.startTime?.substring(0, 5)} ~ {item.endTime?.substring(0, 5)}</div>
+                                <div style={{ fontSize: '13px', fontWeight: 'bold', color:'#333' }}>{item.title}</div>
                             </div>
                         ))}
+                    </div>
                 </div>
             ))}
-            <button
-                type="button"
-                className="btn-ai gemini-apply-btn"
-                onClick={() => onApply(index)}
-                disabled={applying}
-            >
-                {isApplying ? '추가 중...' : `✅ ${option.label || `안 ${index + 1}`} 타임라인에 반영`}
+            <button type="button" className="btn-submit" style={{ width: '100%', marginTop: '10px', padding: '12px' }} onClick={() => onApply(index)} disabled={applying}>
+                {applying && applyIndex === index ? '⏳ 반영 중...' : '✅ 이 스케줄 확정 및 반영'}
             </button>
         </div>
     );
@@ -74,203 +50,59 @@ function ProposalCard({ option, index, onApply, applying, applyIndex }) {
 
 function GeminiTest() {
     const [input, setInput] = useState('');
-    const [messages, setMessages] = useState([
-        {
-            role: 'assistant',
-            content: '일정 고민을 말씀해 주세요. 대화하면서 오른쪽 시간표가 계속 업데이트돼요. 마음에 들면 해당 안의 반영 버튼을 누르세요.',
-        },
-    ]);
+    const [messages, setMessages] = useState([{ role: 'assistant', content: '안녕하세요! YAHO AI 비서입니다. 스케줄 조율 고민을 편하게 말씀해 주세요.' }]);
     const [proposals, setProposals] = useState([]);
     const [loading, setLoading] = useState(false);
     const [applying, setApplying] = useState(false);
     const [applyIndex, setApplyIndex] = useState(null);
-    const [error, setError] = useState('');
     const chatEndRef = useRef(null);
 
-    useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, proposals, loading]);
+    useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
     const sendMessage = async (text) => {
-        const trimmed = (text ?? input).trim();
-        if (!trimmed || loading) return;
-
-        setError('');
-        setInput('');
-
-        const userMsg = { role: 'user', content: trimmed };
-        const historyForApi = messages
-            .filter((m) => m.role === 'user' || m.role === 'assistant')
-            .map((m) => ({ role: m.role, content: m.content }));
-
-        setMessages((prev) => [...prev, userMsg]);
-        setLoading(true);
-
+        const trimmed = (text ?? input).trim(); if (!trimmed || loading) return;
+        setInput(''); setMessages(prev => [...prev, { role: 'user', content: trimmed }]); setLoading(true);
         try {
-            const data = await request('/gemini/chat', {
-                method: 'POST',
-                body: {
-                    message: trimmed,
-                    history: historyForApi,
-                    currentProposals: proposals,
-                },
-            });
-
-            const reply = data.reply || '제안을 업데이트했어요.';
-            const nextProposals =
-                data.proposals?.length > 0
-                    ? data.proposals
-                    : data.items?.length
-                      ? [{ label: '제안 시간표', items: data.items }]
-                      : proposals;
-
-            setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-
-            if (data.proposals?.length || data.items?.length) {
-                setProposals(nextProposals);
-            }
-        } catch (err) {
-            setError(err.message || 'AI 응답에 실패했습니다.');
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: 'assistant',
-                    content: '응답을 가져오지 못했어요. 잠시 후 다시 시도해 주세요.',
-                },
-            ]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleApply = async (index) => {
-        const option = proposals[index];
-        if (!option?.items?.length || applying) return;
-
-        setApplying(true);
-        setApplyIndex(index);
-        setError('');
-
-        try {
-            const result = await request('/gemini/apply', {
-                method: 'POST',
-                body: { items: option.items },
-            });
-
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: 'assistant',
-                    content: `✅ 「${option.label || `안 ${index + 1}`}」 ${result.message || '타임라인에 반영했어요.'} /timeline에서 확인해 보세요.`,
-                },
-            ]);
-        } catch (err) {
-            setError(err.message || '일정 반영에 실패했습니다.');
-        } finally {
-            setApplying(false);
-            setApplyIndex(null);
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
+            const data = await request('/gemini/chat', { method: 'POST', body: { message: trimmed, history: messages.filter(m => m.role==='user'||m.role==='assistant').map(m => ({role:m.role, content:m.content})), currentProposals: proposals } });
+            setMessages(prev => [...prev, { role: 'assistant', content: data.reply || '제안 스케줄을 처리 완료했습니다.' }]);
+            if (data.proposals?.length) setProposals(data.proposals);
+        } catch {
+            setMessages(prev => [...prev, { role: 'assistant', content: '통신 실패했습니다.' }]);
+        } finally { setLoading(false); }
     };
 
     return (
-        <div className="gemini-chat-page">
-            <div className="section-title">AI 일정 상담</div>
-            <p className="gemini-chat-desc">
-                대화할수록 <strong>오른쪽 시간표가 갱신</strong>됩니다. 두 가지 안이 나오면 각각 반영 버튼이 있어요.
-            </p>
+        <div className="gemini-page-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ textAlign: 'left' }}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-brown)' }}>🤖 AI 비서 스마트 스케줄링</h2></div>
 
-            <div className="gemini-chat-layout">
-                <div className="gemini-chat-panel">
-                    <div className="gemini-messages">
+            <div className="dashboard-content-flex" style={{ display: 'flex', gap: '24px', alignItems: 'stretch' }}>
+                <div className="white-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '600px', padding: 0, overflow: 'hidden' }}>
+                    <div className="gemini-messages" style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {messages.map((msg, idx) => (
-                            <div key={idx} className={`gemini-bubble gemini-bubble-${msg.role}`}>
-                                <div className="gemini-bubble-role">{msg.role === 'user' ? '나' : 'AI'}</div>
-                                <div className="gemini-bubble-text">{msg.content}</div>
+                            <div key={idx} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                                <div className={`gemini-bubble-${msg.role}`} style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '14px', whiteSpace:'pre-wrap' }}>{msg.content}</div>
                             </div>
                         ))}
-                        {loading && (
-                            <div className="gemini-bubble gemini-bubble-assistant">
-                                <div className="gemini-bubble-role">AI</div>
-                                <div className="gemini-bubble-text gemini-typing">시간표를 업데이트하고 있어요...</div>
-                            </div>
-                        )}
+                        {loading && <div style={{ alignSelf: 'flex-start' }}><div className="gemini-bubble-assistant" style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '14px' }}>⏳ 최적의 일정을 연산 중입니다...</div></div>}
                         <div ref={chatEndRef} />
                     </div>
 
-                    <div className="gemini-examples">
-                        {EXAMPLE_PROMPTS.map((ex) => (
-                            <button
-                                key={ex}
-                                type="button"
-                                className="gemini-example-chip"
-                                onClick={() => sendMessage(ex)}
-                                disabled={loading}
-                            >
-                                {ex}
-                            </button>
-                        ))}
+                    <div style={{ padding: '12px 20px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px', overflowX: 'auto' }}>
+                        {EXAMPLE_PROMPTS.map(ex => <button key={ex} type="button" onClick={() => sendMessage(ex)} disabled={loading} style={{ padding: '8px 14px', borderRadius: '20px', border: '1px solid var(--border-color)', background: 'var(--bg-body)', color: 'var(--text-brown)', fontSize: '12px', cursor: 'pointer', whiteSpace:'nowrap' }}>{ex}</button>)}
                     </div>
 
-                    <div className="gemini-input-row">
-                        <textarea
-                            className="gemini-input"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="예: 운동 시간을 저녁으로 옮겨줘 / 공부 블록을 2시간씩 늘려줘"
-                            rows={2}
-                            disabled={loading}
-                        />
-                        <button
-                            type="button"
-                            className="btn-ai"
-                            onClick={() => sendMessage()}
-                            disabled={loading || !input.trim()}
-                        >
-                            보내기
-                        </button>
+                    <div style={{ padding: '16px', display: 'flex', gap: '12px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-color)' }}>
+                        <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key==='Enter' && sendMessage()} placeholder="일정 조정을 지시하세요..." disabled={loading} style={{ flex: 1, padding: '14px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '14px', background: 'var(--bg-body)', color:'var(--text-brown)', outline: 'none' }} />
+                        <button type="button" className="btn-add-regular" style={{ padding: '13px 24px', borderRadius: '12px', margin: 0 }} onClick={() => sendMessage()} disabled={loading || !input.trim()}>보내기</button>
                     </div>
-
-                    {error && <p className="gemini-error">{error}</p>}
                 </div>
 
-                <aside className="gemini-draft-panel">
-                    <h3 className="gemini-draft-heading">📋 제안 시간표</h3>
-                    <p className="gemini-draft-sub">
-                        대화로 수정하면 여기만 바뀝니다. 채팅 안에는 중복 표시하지 않아요.
-                    </p>
-
-                    {proposals.length === 0 ? (
-                        <div className="gemini-draft-empty">
-                            아직 제안이 없어요.<br />
-                            왼쪽에서 질문해 보세요.
-                        </div>
-                    ) : (
-                        <div className="gemini-proposal-stack">
-                            {proposals.map((option, idx) => (
-                                <ProposalCard
-                                    key={`${option.label}-${idx}`}
-                                    option={option}
-                                    index={idx}
-                                    onApply={handleApply}
-                                    applying={applying}
-                                    applyIndex={applyIndex}
-                                />
-                            ))}
-                        </div>
-                    )}
-
-                    <p className="gemini-side-note">
-                        반영 후 <Link to="/timeline">타임라인</Link>에서 확인하세요.
-                    </p>
-                </aside>
+                <div style={{ width: '320px', display: 'flex', flexDirection: 'column', flexShrink: 0 }} className="timeline-side-widgets">
+                    <div className="white-card" style={{ padding: '20px', flex: 1, maxHeight: '600px', overflowY: 'auto' }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '12px', color:'var(--text-brown)' }}>📋 제안 시간표 대시보드</h3>
+                        {proposals.length === 0 ? <div style={{ color: '#BBB', fontSize: '13px', paddingTop: '100px', textAlign: 'center' }}>제안이 아직 없습니다. 채본에게 질문해 보세요! 🌿</div> : proposals.map((option, idx) => <ProposalCard key={idx} option={option} index={idx} onApply={handleApply} applying={applying} applyIndex={applyIndex} />)}
+                    </div>
+                </div>
             </div>
         </div>
     );

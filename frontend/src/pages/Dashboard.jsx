@@ -9,9 +9,7 @@ const categoryColors = {
     '기타': 'badge-기타'
 };
 
-// 랜덤 환영 문구 리스트
 const welcomeMessages = [
-    "넌 할 수 있어! 오늘도 화이팅~ 💪",
     "오늘 하루도 알차게 보내봐요! ✨",
     "차근차근 하나씩 해나가면 돼요! 🐢",
     "멋진 하루가 될 거예요, 응원합니다! 🍀",
@@ -20,48 +18,38 @@ const welcomeMessages = [
 
 function Dashboard() {
     const [combinedSchedules, setCombinedSchedules] = useState([]);
-    const [stats, setStats] = useState({ todayCount: 0, weekTotal: 0, remainingCount: 0 });
+    const [stats, setStats] = useState({ todayCount: 0, weekTotal: 0, completionRate: 0, streak: 0 });
     const [todayStr, setTodayStr] = useState('');
     const [loading, setLoading] = useState(true);
-    const [welcomeMessage, setWelcomeMessage] = useState(''); // ✨ 환영 문구 상태
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const [welcomeMessage, setWelcomeMessage] = useState('');
 
-    useEffect(() => {
-        // ✨ 컴포넌트 마운트 시 랜덤 환영 문구 설정
-        const randomIndex = Math.floor(Math.random() * welcomeMessages.length);
-        setWelcomeMessage(welcomeMessages[randomIndex]);
-
-        request('/diary')
-            .then(data => {
-                const startOfWeek = new Date(data.mon);
+    const loadDashboardData = () => {
+        Promise.all([request('/diary'), request('/user/me')])
+            .then(([diaryData, userData]) => {
+                const startOfWeek = new Date(diaryData.mon);
                 const weekDates = [];
                 for (let i = 0; i < 7; i++) {
                     const d = new Date(startOfWeek);
                     d.setDate(startOfWeek.getDate() + i);
-                    const year = d.getFullYear();
-                    const month = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    weekDates.push(`${year}-${month}-${day}`);
+                    weekDates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
                 }
 
-                // ✨ 일반 일정에 isCompleted 상태 추가
-                const regular = data.weekSchedules.map(s => ({ 
+                const regular = diaryData.weekSchedules.map(s => ({ 
                     ...s, 
                     isFixed: false, 
                     isCompleted: s.isCompleted || false 
                 }));
 
-                // ✨ 고정 일정에 isCompleted 상태 추가
-                const completedFixedKeys = new Set(data.completedFixedKeys || []);
-
+                const completedFixedKeys = new Set(diaryData.completedFixedKeys || []);
                 const expandedFixed = [];
+                
                 weekDates.forEach((date, index) => {
-                const matchingFixed = (data.fixedList || []).filter(f => {
-                    if (f.dayOfWeek !== index) return false;
-                    if (f.startDate && f.startDate > date) return false;
-                    if (f.endDate && f.endDate < date) return false;
-                    return true;
-                });
+                    const matchingFixed = (diaryData.fixedList || []).filter(f => {
+                        if (f.dayOfWeek !== index) return false;
+                        if (f.startDate && f.startDate > date) return false;
+                        if (f.endDate && f.endDate < date) return false;
+                        return true;
+                    });
                     
                     matchingFixed.forEach(f => {
                         expandedFixed.push({
@@ -85,120 +73,121 @@ function Dashboard() {
                     return a.startTime.localeCompare(b.startTime);
                 });
 
-                const todayCount = merged.filter(s => s.date === data.today).length;
+                const todayCount = merged.filter(s => s.date === diaryData.today).length;
                 const weekTotal = merged.length;
+                const completedWeekCount = merged.filter(s => s.isCompleted).length;
+                const completionRate = weekTotal > 0 ? Math.round((completedWeekCount / weekTotal) * 100) : 0;
 
                 setCombinedSchedules(merged);
-                setStats({
-                    todayCount,
-                    weekTotal,
-                    remainingCount: weekTotal - todayCount
-                });
-                setTodayStr(data.today);
+                setStats({ todayCount, weekTotal, completionRate, streak: userData.streak || 0 });
+                setTodayStr(diaryData.today);
                 setLoading(false);
             })
             .catch(err => {
                 alert(err.message);
                 setLoading(false);
             });
+    };
+
+    useEffect(() => {
+        setWelcomeMessage(welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)]);
+        loadDashboardData();
     }, []);
 
-    // ✨ 체크박스 클릭 시 완료 상태 토글 함수
     const handleToggleComplete = async (id, isFixed, date) => {
-        if (isFixed) {
-            const fixedId = String(id).split('-')[1]; // "fixed-3-2026-05-29" → "3"
-            await request('/schedule/fixed-complete', { method: 'PUT', body: { fixedId, date } });
-        } else {
-            await request(`/schedule/complete/${id}`, { method: 'PUT' });
-        }
-        setCombinedSchedules(prevSchedules =>
-            prevSchedules.map(schedule =>
-                schedule.id === id
-                    ? { ...schedule, isCompleted: !schedule.isCompleted }
-                    : schedule
-            )
-        );
+        try {
+            if (isFixed) {
+                const fixedId = String(id).split('-')[1];
+                await request('/schedule/fixed-complete', { method: 'PUT', body: { fixedId, date } });
+            } else {
+                await request(`/schedule/complete/${id}`, { method: 'PUT' });
+            }
+            
+            setCombinedSchedules(prevSchedules => {
+                const updated = prevSchedules.map(s => s.id === id ? { ...s, isCompleted: !s.isCompleted } : s);
+                const weekTotal = updated.length;
+                const completedWeekCount = updated.filter(s => s.isCompleted).length;
+                
+                setStats(prev => ({
+                    ...prev,
+                    completionRate: weekTotal > 0 ? Math.round((completedWeekCount / weekTotal) * 100) : 0
+                }));
+                return updated;
+            });
+        } catch (err) { alert(err.message); }
     };
 
     if (loading) return <div className="no-schedule">로딩 중...🌿</div>;
 
-    return (
-        <>
-            {/* ✨ 환영 문구 표시 영역 */}
-            <h2 className="welcome-message">{welcomeMessage}</h2>
+    const todayTasks = combinedSchedules.filter(s => s.date === todayStr);
+    const upcomingTasks = combinedSchedules.filter(s => s.date >= todayStr && !s.isCompleted).slice(0, 4);
 
-            <div className="stat-section">
-                <div className="stat-card">
-                    <span className="stat-icon">📅</span>
-                    <span className="stat-num">{stats.todayCount}</span>
-                    <span className="stat-label">오늘 일정</span>
-                </div>
-                <div className="stat-card">
-                    <span className="stat-icon">📋</span>
-                    <span className="stat-num">{stats.weekTotal}</span>
-                    <span className="stat-label">이번 주 전체</span>
-                </div>
-                <div className="stat-card">
-                    <span className="stat-icon">✅</span>
-                    <span className="stat-num">{stats.remainingCount}</span>
-                    <span className="stat-label">오늘 이후 남은 일정</span>
-                </div>
+    return (
+        <div className="dashboard-container">
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '4px', color: 'var(--text-brown)' }}>오늘의 일정</h2>
+            <p style={{ color: 'var(--text-light)', marginBottom: '24px', fontSize: '14px' }}>{welcomeMessage}</p>
+
+            <div className="dashboard-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '30px' }}>
+                {/* 상단 통계 위젯 테마화 */}
+                {[
+                    { icon: "🗓️", label: "오늘 일정", val: stats.todayCount, unit: "건" },
+                    { icon: "📋", label: "이번 주 일정", val: stats.weekTotal, unit: "건" },
+                    { icon: "⏱️", label: "주간 달성률", val: stats.completionRate, unit: "% 달성" },
+                    { icon: "🏆", label: "연속 달성", val: stats.streak, unit: "일째" }
+                ].map((w, idx) => (
+                    <div key={idx} className="white-card" style={{ display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
+                        <span style={{ fontSize: '24px' }}>{w.icon}</span>
+                        <div style={{ color: 'var(--text-light)', fontSize: '13px', fontWeight: 'bold' }}>{w.label}</div>
+                        <h3 style={{ margin: 0, fontSize: '26px', fontWeight: '900', color: 'var(--text-brown)' }}>
+                            {w.val}<span style={{ fontSize: '14px', fontWeight: 'normal', color: 'var(--text-light)', marginLeft: '2px' }}>{w.unit}</span>
+                        </h3>
+                    </div>
+                ))}
             </div>
 
-            <div className="section-title">이번 주 일정</div>
+            <div className="dashboard-content-flex" style={{ display: 'flex', gap: '20px' }}>
+                {/* 왼쪽 카드: 다가오는 일정 */}
+                <div className="white-card" style={{ flex: 1, textAlign: 'left' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '16px', color: 'var(--text-brown)' }}>곧 다가오는 일정</h3>
+                    {upcomingTasks.length === 0 ? (
+                        <div style={{ padding: '40px 0', color: 'var(--text-light)', fontSize: '13px', textAlign: 'center' }}>남은 일정이 없습니다. 대기 완료! ✨</div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {upcomingTasks.map(task => (
+                                <div key={task.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'var(--bg-body)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--point-gold)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                            {task.startTime ? task.startTime.substring(0, 5) : '하루'}
+                                        </span>
+                                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-brown)' }}>{task.title}</span>
+                                    </div>
+                                    <span className={`badge ${categoryColors[task.category] || 'badge-기타'}`} style={{ margin: 0 }}>
+                                        {task.category}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-            {combinedSchedules.length > 0 ? (
-                <table className="week-table">
-                    <thead>
-                        <tr>
-                            {/* ✨ 체크박스용 헤더 추가 및 비율 조정 */}
-                            <th style={{ width: '5%', textAlign: 'center' }}>✓</th>
-                            <th style={{ width: '15%' }}>날짜</th>
-                            <th style={{ width: '10%' }}>요일</th>
-                            <th style={{ width: '15%' }}>시간</th>
-                            <th style={{ width: '20%' }}>일정</th>
-                            <th style={{ width: '10%' }}>카테고리</th>
-                            <th className="col-memo-home" style={{ width: '25%' }}>종료</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {combinedSchedules.map((s) => {
-                            const isToday = s.date === todayStr;
-                            const dayOfWeekStr = days[new Date(s.date).getDay()] + '요일';
-                            const badgeClass = categoryColors[s.category] || 'badge-기타';
-                            
-                            // ✨ 완료 상태에 따라 tr 태그에 클래스 동적 부여
-                            const rowClass = `${isToday ? 'is-today' : ''} ${s.isCompleted ? 'completed-task' : ''}`.trim();
-
-                            return (
-                                <tr key={s.id} className={rowClass}>
-                                    {/* ✨ 체크박스 셀 추가 */}
-                                    <td style={{ textAlign: 'center' }}>
-                                        <input 
-                                            type="checkbox" 
-                                            className="task-checkbox"
-                                            checked={s.isCompleted} 
-                                            onChange={() => handleToggleComplete(s.id, s.isFixed, s.date)}
-                                        />
-                                    </td>
-                                    <td>{s.date}</td>
-                                    <td>{dayOfWeekStr}</td>
-                                    <td>{s.startTime ? s.startTime.substring(0, 5) : '-'}</td>
-                                    {/* 취소선 스타일을 위해 span으로 감싸기 */}
-                                    <td><span>{s.title}</span></td>
-                                    <td>
-                                        <span className={`badge ${badgeClass}`}>{s.category}</span>
-                                    </td>
-                                    <td className="col-memo-home">{s.endTime ? s.endTime.substring(0, 5) : '-'}</td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            ) : (
-                <div className="no-schedule">이번 주 등록된 일정이 없어요 🌿</div>
-            )}
-        </>
+                {/* 오른쪽 카드: 오늘 할 일 */}
+                <div className="white-card" style={{ flex: 1, textAlign: 'left' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '16px', color: 'var(--text-brown)' }}>오늘 할 일 (To-Do)</h3>
+                    {todayTasks.length === 0 ? (
+                        <div style={{ padding: '40px 0', color: 'var(--text-light)', fontSize: '13px', textAlign: 'center' }}>오늘 등록된 스케줄이 비어있습니다. 🌿</div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {todayTasks.map(task => (
+                                <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--bg-body)', borderRadius: '12px', border: '1px solid var(--border-color)' }} className={task.isCompleted ? 'completed-task' : ''}>
+                                    <input type="checkbox" className="task-checkbox" checked={task.isCompleted} onChange={() => handleToggleComplete(task.id, task.isFixed, task.date)} />
+                                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-brown)' }}>{task.title}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 }
 

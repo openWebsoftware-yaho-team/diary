@@ -1,60 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
-import Footer from './components/Footer';
+import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Timeline from './pages/Timeline';
 import Calendar from './pages/Calendar';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import MyPage from './pages/MyPage';
-import { request } from './api';
 import GeminiTest from './pages/GeminiTest';
+import { request } from './api';
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [theme, setTheme] = useState('light'); // 전역 테마 상태 추가
+    const [theme, setTheme] = useState('light');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // 1. 로그인 성공 시 유저가 설정해둔 기존 테마 상태를 DB에서 조회
     useEffect(() => {
         if (isAuthenticated) {
             request('/user/me')
-                .then(data => {
-                    setTheme(data.theme || 'light');
-                })
-                .catch(() => {
-                    setIsAuthenticated(false);
-                });
+                .then(data => setTheme(data.theme || 'light'))
+                .catch(() => setIsAuthenticated(false));
         } else {
-            setTheme('light'); // 로그아웃 상태 시 기본 라이트 모드로 리셋
+            setTheme('light');
         }
     }, [isAuthenticated]);
 
-    // 2. 테마 상태가 바뀔 때마다 실제 HTML의 body 태그 클래스를 유연하게 탈부착
     useEffect(() => {
-        if (theme === 'dark') {
-            document.body.classList.add('dark-theme');
-        } else {
-            document.body.classList.remove('dark-theme');
-        }
+        if (theme === 'dark') document.body.classList.add('dark-theme');
+        else document.body.classList.remove('dark-theme');
     }, [theme]);
 
     return (
         <Router>
-            <Header isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
-            <main className="main-content">
+            {isAuthenticated ? (
+                <div className="app-container">
+                    {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+                    <Sidebar isOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+                    
+                    <div className="main-wrapper">
+                        <Header isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} setIsSidebarOpen={setIsSidebarOpen} />
+                        <main className="main-content" style={{ padding: '30px 40px', margin: 0, maxWidth: 'none', textAlign: 'left' }}>
+                            <Routes>
+                                <Route path="/" element={<Dashboard />} />
+                                <Route path="/timeline" element={<Timeline />} />
+                                <Route path="/calendar" element={<Calendar />} />
+                                <Route path="/mypage" element={<MyPage setTheme={setTheme} />} />
+                                <Route path="/gemini" element={<GeminiTest />} />
+                            </Routes>
+                        </main>
+                    </div>
+                </div>
+            ) : (
                 <Routes>
-                    <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
-                    <Route path="/timeline" element={isAuthenticated ? <Timeline /> : <Navigate to="/login" />} />
-                    <Route path="/calendar" element={isAuthenticated ? <Calendar /> : <Navigate to="/login" />} />
-                    {/* 마이페이지에 테마 변경 함수(setTheme)를 props로 전달합니다. */}
-                    <Route path="/mypage" element={isAuthenticated ? <MyPage setTheme={setTheme} /> : <Navigate to="/login" />} />
                     <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
                     <Route path="/signup" element={<Signup />} />
-                    <Route path="/gemini" element={<GeminiTest />} />
+                    <Route path="*" element={<Navigate to="/login" />} />
                 </Routes>
-            </main>
-            <Footer />
+            )}
         </Router>
     );
 }
