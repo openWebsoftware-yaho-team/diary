@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AiChatMessageDto {
+public class AiChatMessageDto 
+{
     private String role;
     private String content;
 }

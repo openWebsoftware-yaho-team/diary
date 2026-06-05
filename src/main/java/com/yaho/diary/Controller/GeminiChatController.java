@@ -16,24 +16,29 @@ import com.yaho.diary.Service.GeminiService;
 
 @RestController
 @RequestMapping("/api/gemini")
-public class GeminiChatController {
+public class GeminiChatController 
+{
 
     private final GeminiService geminiService;
 
-    public GeminiChatController(GeminiService geminiService) {
+    public GeminiChatController(GeminiService geminiService) 
+    {
         this.geminiService = geminiService;
     }
 
     @PostMapping("/chat")
-    public ResponseEntity<AiChatResponseDto> chat(@RequestBody AiChatRequestDto request) throws Exception {
+    public ResponseEntity<AiChatResponseDto> chat(@RequestBody AiChatRequestDto request) throws Exception 
+    {
         String message = request.getMessage() != null ? request.getMessage().trim() : "";
-        if (message.isBlank()) {
+        if (message.isBlank()) 
+        {
             AiChatResponseDto empty = new AiChatResponseDto();
             empty.setReply("메시지를 입력해 주세요.");
             return ResponseEntity.ok(empty);
         }
 
-        AiChatResponseDto response = geminiService.proposeSchedule(
+        AiChatResponseDto response = geminiService.proposeSchedule
+        (
                 message,
                 request.getHistory(),
                 request.getCurrentProposals()
@@ -42,7 +47,8 @@ public class GeminiChatController {
     }
 
     @PostMapping("/apply")
-    public ResponseEntity<Map<String, Object>> apply(@RequestBody AiApplyProposalRequestDto request) {
+    public ResponseEntity<Map<String, Object>> apply(@RequestBody AiApplyProposalRequestDto request) 
+    {
         int count = geminiService.applyProposal(request.getItems());
 
         Map<String, Object> body = new HashMap<>();

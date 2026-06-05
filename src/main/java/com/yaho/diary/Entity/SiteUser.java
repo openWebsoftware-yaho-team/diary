@@ -6,7 +6,8 @@ import lombok.Setter;
 
 @Entity
 @Getter @Setter
-public class SiteUser {
+public class SiteUser 
+{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +20,7 @@ public class SiteUser {
     
     private String email; // 이메일 칸 복원
 
-    private String theme = "light"; // 테마 설정 (기본값: light)
+    private String theme = "light"; // 테마 설정 (디폴트값: 라이트)
 
     private String defaultCategory = "기타"; // AI/일정 등록 시 사용할 기본 카테고리
 }

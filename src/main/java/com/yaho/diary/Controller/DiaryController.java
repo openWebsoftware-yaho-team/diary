@@ -6,7 +6,7 @@ import com.yaho.diary.Entity.FixedSchedule;
 import com.yaho.diary.Repository.FixedCompletionRepository;
 import com.yaho.diary.Repository.ScheduleRepository;
 import com.yaho.diary.Repository.FixedScheduleRepository;
-import com.yaho.diary.Repository.FixedSkipRepository; // ✨ 추가
+import com.yaho.diary.Repository.FixedSkipRepository; 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,27 +21,30 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
-public class DiaryController {
+public class DiaryController 
+{
 
     private final ScheduleRepository scheduleRepository;
     private final FixedScheduleRepository fixedScheduleRepository;
     private final FixedCompletionRepository fixedCompletionRepository;
-    private final FixedSkipRepository fixedSkipRepository; // ✨ 추가
+    private final FixedSkipRepository fixedSkipRepository; 
 
     public DiaryController(
             ScheduleRepository scheduleRepository,
             FixedScheduleRepository fixedScheduleRepository,
             FixedCompletionRepository fixedCompletionRepository,
-            FixedSkipRepository fixedSkipRepository // ✨ 추가
-    ) {
+            FixedSkipRepository fixedSkipRepository 
+    ) 
+    {
         this.scheduleRepository = scheduleRepository;
         this.fixedScheduleRepository = fixedScheduleRepository;
         this.fixedCompletionRepository = fixedCompletionRepository;
-        this.fixedSkipRepository = fixedSkipRepository; // ✨ 추가
+        this.fixedSkipRepository = fixedSkipRepository;
     }
 
     @GetMapping("/diary")
-    public ResponseEntity<Map<String, Object>> home() {
+    public ResponseEntity<Map<String, Object>> home() 
+    {
         LocalDate today = LocalDate.now();
         LocalDate mon = today.with(DayOfWeek.MONDAY);
         LocalDate sun = mon.plusDays(6);
@@ -63,7 +66,7 @@ public class DiaryController {
                 .map(fc -> fc.getFixedId() + "-" + fc.getDate())
                 .collect(Collectors.toSet());
 
-        // ✨ 추가: 이번주 범위 내에 제외(Skip) 등록된 루틴 키셋 추출
+        //이번주 범위 내에 제외(Skip) 등록된 루틴 키셋 추출
         java.util.Set<String> skippedFixedKeys = fixedSkipRepository.findAll().stream()
                 .filter(fs -> {
                     LocalDate d = LocalDate.parse(fs.getDate());
@@ -76,7 +79,7 @@ public class DiaryController {
         response.put("weekSchedules", weekSchedules);
         response.put("fixedList", fixedList);
         response.put("completedFixedKeys", completedFixedKeys);
-        response.put("skippedFixedKeys", skippedFixedKeys); // ✨ 추가
+        response.put("skippedFixedKeys", skippedFixedKeys); 
         response.put("today", today.toString());
         response.put("mon", mon.toString());
 

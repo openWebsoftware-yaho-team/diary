@@ -12,27 +12,31 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-public class SignupController {
+public class SignupController 
+{
 
     private final SiteUserRepository siteUserRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
     public SignupController(SiteUserRepository siteUserRepository,
-                            BCryptPasswordEncoder passwordEncoder) {
+                            BCryptPasswordEncoder passwordEncoder) 
+    {
         this.siteUserRepository = siteUserRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    // 회원가입 전송 API (JSON 수신)
+    // 회원가입 전송 API (JSON 수신~)
     @PostMapping("/signup")
-    public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> payload) 
+    {
         String username = payload.get("username");
         String password = payload.get("password");
 
         Map<String, String> response = new HashMap<>();
 
         // 아이디 중복 체크 로직 보완
-        if (siteUserRepository.findByUsername(username) != null) {
+        if (siteUserRepository.findByUsername(username) != null) 
+        {
             response.put("message", "이미 존재하는 사용자 아이디입니다.");
             return ResponseEntity.badRequest().body(response);
         }
@@ -43,6 +47,7 @@ public class SignupController {
         siteUserRepository.save(user);
 
         response.put("message", "회원가입이 완료되었습니다.");
+        
         return ResponseEntity.ok(response);
     }
 }
