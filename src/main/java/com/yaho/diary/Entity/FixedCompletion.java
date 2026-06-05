@@ -8,7 +8,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter @Setter
 @NoArgsConstructor
-public class FixedCompletion {
+public class FixedCompletion 
+{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

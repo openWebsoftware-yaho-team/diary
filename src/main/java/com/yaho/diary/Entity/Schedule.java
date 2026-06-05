@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter @Setter
 @NoArgsConstructor
-public class Schedule {
+public class Schedule 
+{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

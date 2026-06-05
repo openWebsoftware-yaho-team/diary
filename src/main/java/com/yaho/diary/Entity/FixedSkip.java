@@ -8,12 +8,13 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter @Setter
 @NoArgsConstructor
-public class FixedSkip {
+public class FixedSkip 
+{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long fixedId;
-    private String date; // "2026-06-04" 형태의 문자열 포맷
+    private String date; // "2026-06-04" 형태의 문자열
 }

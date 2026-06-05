@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AiProposalOptionDto {
+public class AiProposalOptionDto 
+{
     private String label;
     private List<AiProposedScheduleItem> items = new ArrayList<>();
 }

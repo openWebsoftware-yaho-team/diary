@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AiProposedScheduleItem {
+public class AiProposedScheduleItem 
+{
     private String title;
     private String date;
     private String startTime;

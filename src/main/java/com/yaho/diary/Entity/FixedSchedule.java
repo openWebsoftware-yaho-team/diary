@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter @Setter
 @NoArgsConstructor
-public class FixedSchedule {
+public class FixedSchedule 
+{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

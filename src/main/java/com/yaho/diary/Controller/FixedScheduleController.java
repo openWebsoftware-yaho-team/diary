@@ -13,28 +13,36 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/fixed")
-public class FixedScheduleController {
+public class FixedScheduleController 
+{
 
     private final FixedScheduleRepository fixedScheduleRepository;
 
-    public FixedScheduleController(FixedScheduleRepository fixedScheduleRepository) {
+    public FixedScheduleController(FixedScheduleRepository fixedScheduleRepository) 
+    {
         this.fixedScheduleRepository = fixedScheduleRepository;
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Map<String, String>> addFixed(@RequestBody FixedScheduleDto dto) {
+    public ResponseEntity<Map<String, String>> addFixed(@RequestBody FixedScheduleDto dto) 
+    {
         FixedSchedule fs = new FixedSchedule();
         fs.setTitle(dto.getTitle());
         fs.setDayOfWeek(dto.getDayOfWeek());
         fs.setStartTime(dto.getStartTime());
         fs.setEndTime(dto.getEndTime());
         fs.setCategory(dto.getCategory());
-        if (dto.getStartDate() != null && !dto.getStartDate().isBlank()) {
+        if (dto.getStartDate() != null && !dto.getStartDate().isBlank()) 
+        {
             fs.setStartDate(LocalDate.parse(dto.getStartDate()));
-        } else {
+        } 
+        else 
+        {
             fs.setStartDate(LocalDate.now().with(java.time.DayOfWeek.MONDAY));
         }
-        if (dto.getEndDate() != null && !dto.getEndDate().isBlank()) {
+
+        if (dto.getEndDate() != null && !dto.getEndDate().isBlank()) 
+        {
             fs.setEndDate(LocalDate.parse(dto.getEndDate()));
         }
         fixedScheduleRepository.save(fs);
@@ -45,11 +53,13 @@ public class FixedScheduleController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<Map<String, String>> updateFixed(@PathVariable Long id, @RequestBody FixedScheduleDto dto) {
+    public ResponseEntity<Map<String, String>> updateFixed(@PathVariable Long id, @RequestBody FixedScheduleDto dto) 
+    {
         Map<String, String> response = new HashMap<>();
         Optional<FixedSchedule> found = fixedScheduleRepository.findById(id);
         
-        if (found.isPresent()) {
+        if (found.isPresent()) 
+        {
             FixedSchedule fs = found.get();
             fs.setTitle(dto.getTitle());
             fs.setDayOfWeek(dto.getDayOfWeek());
