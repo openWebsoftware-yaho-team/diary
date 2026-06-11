@@ -80,7 +80,7 @@ public class UserController
         response.put("streak", streak);
 
         //[카테고리 비율 통계] 각 카테고리별 개수 집계
-        List<Schedule> allSchedules = scheduleRepository.findAll();
+        List<Schedule> allSchedules = scheduleRepository.findByUser(user);
         Map<String, Integer> catStats = new HashMap<>();
 
         // 기본 카테고리 종류들 초기화

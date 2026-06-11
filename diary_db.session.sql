@@ -1,2 +1,1 @@
-SELECT * FROM schedule;
-SELECT * FROM fixed_schedule;
+DELETE FROM fixed_schedule WHERE user_id IS NULL;

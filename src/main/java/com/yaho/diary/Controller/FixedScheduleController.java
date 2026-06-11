@@ -2,10 +2,13 @@ package com.yaho.diary.Controller;
 
 import com.yaho.diary.Dto.FixedScheduleDto;
 import com.yaho.diary.Entity.FixedSchedule;
+import com.yaho.diary.Entity.SiteUser;
 import com.yaho.diary.Repository.FixedScheduleRepository;
+import com.yaho.diary.Repository.SiteUserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,14 +19,20 @@ import java.util.Optional;
 public class FixedScheduleController {
 
     private final FixedScheduleRepository fixedScheduleRepository;
+    private final SiteUserRepository siteUserRepository;
 
-    public FixedScheduleController(FixedScheduleRepository fixedScheduleRepository) {
+    public FixedScheduleController(FixedScheduleRepository fixedScheduleRepository,
+                                   SiteUserRepository siteUserRepository) {
         this.fixedScheduleRepository = fixedScheduleRepository;
+        this.siteUserRepository = siteUserRepository;
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Map<String, String>> addFixed(@RequestBody FixedScheduleDto dto) {
+    public ResponseEntity<Map<String, String>> addFixed(@RequestBody FixedScheduleDto dto, Principal principal) {
+        SiteUser user = siteUserRepository.findByUsername(principal.getName());
+
         FixedSchedule fs = new FixedSchedule();
+        fs.setUser(user);
         fs.setTitle(dto.getTitle());
         fs.setDayOfWeek(dto.getDayOfWeek());
         fs.setStartTime(dto.getStartTime());
@@ -56,11 +65,8 @@ public class FixedScheduleController {
             fs.setStartTime(dto.getStartTime());
             fs.setEndTime(dto.getEndTime());
             fs.setCategory(dto.getCategory());
-            
-            // ✨ 누락되었던 시작일(startDate) 덮어쓰기 로직 추가 완료!
             fs.setStartDate(dto.getStartDate() != null && !dto.getStartDate().isBlank()
                     ? LocalDate.parse(dto.getStartDate()) : null);
-                    
             fs.setEndDate(dto.getEndDate() != null && !dto.getEndDate().isBlank()
                     ? LocalDate.parse(dto.getEndDate()) : null);
             fixedScheduleRepository.save(fs);

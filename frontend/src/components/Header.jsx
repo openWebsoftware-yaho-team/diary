@@ -4,14 +4,14 @@ import { request } from '../api';
 
 function Header({ isAuthenticated, setIsAuthenticated, setIsSidebarOpen }) {
     const navigate = useNavigate();
-    const [showNoti, setShowNoti] = useState(false); // ✨ 알림 토글 창 활성화 유무 변수
+    const [showNoti, setShowNoti] = useState(false); //알림 토글 창 활성화 유무 변수
     const notiRef = useRef(null);
 
     const handleLogout = async () => {
         try {
             await request('/logout', { method: 'POST' });
             setIsAuthenticated(false);
-            navigate('/login');
+            navigate('/');
         } catch (err) { 
             alert(err.message); 
         }

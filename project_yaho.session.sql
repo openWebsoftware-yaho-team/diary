@@ -1,0 +1,1 @@
+DELETE FROM schedule WHERE user_id IS NULL;

@@ -12,22 +12,19 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class FixedSchedule 
 {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private SiteUser user;
+
     private String title;
-
-    private Integer dayOfWeek; // 0=월 ~ 6=일
-
+    private Integer dayOfWeek;
     private String startTime;
-
     private String endTime;
-
     private String category;
-
     private LocalDate startDate;
-    
     private LocalDate endDate;
 }

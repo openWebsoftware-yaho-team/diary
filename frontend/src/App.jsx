@@ -14,8 +14,27 @@ import { request } from './api';
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [authChecked, setAuthChecked] = useState(false); 
     const [theme, setTheme] = useState('light');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    useEffect(() => {
+        request('/user/me')
+            .then(data => {
+                if (data && data.username) {
+                    setIsAuthenticated(true);
+                    setTheme(data.theme || 'light');
+                } else {
+                    setIsAuthenticated(false);
+                    setTheme('light');
+                }
+            })
+            .catch(() => {
+                setIsAuthenticated(false);
+                setTheme('light');
+            })
+            .finally(() => setAuthChecked(true)); // 추가
+    }, []);
 
     useEffect(() => {
         request('/user/me')
@@ -49,6 +68,9 @@ function App() {
         if (theme === 'dark') document.body.classList.add('dark-theme');
         else document.body.classList.remove('dark-theme');
     }, [theme]);
+
+    // 랜더링.. 때문에 깜빡이는 거 방지
+    if (!authChecked) return null; 
 
     return (
         <Router>
