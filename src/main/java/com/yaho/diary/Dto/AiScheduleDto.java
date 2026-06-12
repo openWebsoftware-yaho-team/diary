@@ -17,5 +17,7 @@ public class AiScheduleDto
     private String category;
     private String targetTitle;
     private String targetDate;
-    private Integer dayOfWeek; // add_fixed 전용.. // 0(월요일)~6(일요일)임. 
+    private String targetStartTime;
+    private Integer dayOfWeek; // add_fixed / update_fixed의 새 요일 (0=월~6=일)
+    private Integer targetDayOfWeek; // delete_fixed / update_fixed 대상 식별용 요일 (0=월~6=일)
 }

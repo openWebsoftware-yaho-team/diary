@@ -13,4 +13,6 @@ import lombok.NoArgsConstructor;
 public class AiApplyProposalRequestDto 
 {
     private List<AiProposedScheduleItem> items = new ArrayList<>();
+    private List<AiProposedRemovalItem> removals = new ArrayList<>();
+    private List<AiProposedEditItem> edits = new ArrayList<>();
 }

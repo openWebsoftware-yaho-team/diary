@@ -1,8 +1,5 @@
 package com.yaho.diary.Controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yaho.diary.Dto.AiApplyProposalRequestDto;
+import com.yaho.diary.Dto.AiApplyResultDto;
 import com.yaho.diary.Dto.AiChatRequestDto;
 import com.yaho.diary.Dto.AiChatResponseDto;
 import com.yaho.diary.Service.GeminiService;
@@ -47,13 +45,9 @@ public class GeminiChatController
     }
 
     @PostMapping("/apply")
-    public ResponseEntity<Map<String, Object>> apply(@RequestBody AiApplyProposalRequestDto request) 
+    public ResponseEntity<AiApplyResultDto> apply(@RequestBody AiApplyProposalRequestDto request)
     {
-        int count = geminiService.applyProposal(request.getItems());
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("message", count > 0 ? count + "개 일정이 타임라인에 추가되었습니다." : "추가할 일정이 없습니다.");
-        body.put("count", count);
-        return ResponseEntity.ok(body);
+        AiApplyResultDto result = geminiService.applyProposal(request.getItems(), request.getRemovals(), request.getEdits());
+        return ResponseEntity.ok(result);
     }
 }

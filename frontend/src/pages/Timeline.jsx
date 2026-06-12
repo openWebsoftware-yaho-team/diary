@@ -11,10 +11,99 @@ const categoryColors = {
     '기타': 'bg-pastel-yellow'
 };
 
+function normDateStr(d) {
+    if (!d) return '';
+    return String(d).substring(0, 10);
+}
+
+function parseTimeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.substring(0, 5).split(':').map(Number);
+    return h * 60 + m;
+}
+
+function getEndMinutes(startTime, endTime) {
+    if (endTime) return parseTimeToMinutes(endTime);
+    return parseTimeToMinutes(startTime) + 60;
+}
+
+function timesOverlap(start1, end1, start2, end2) {
+    return start1 < end2 && start2 < end1;
+}
+
+function layoutDayEvents(events) {
+    if (!events.length) return new Map();
+
+    const items = events.map(e => ({
+        id: e.id,
+        start: parseTimeToMinutes(e.startTime),
+        end: getEndMinutes(e.startTime, e.endTime),
+    })).sort((a, b) => a.start - b.start);
+
+    const layout = new Map();
+    const columnEnds = [];
+
+    for (const item of items) {
+        let col = columnEnds.findIndex(end => end <= item.start);
+        if (col === -1) {
+            col = columnEnds.length;
+            columnEnds.push(item.end);
+        } else {
+            columnEnds[col] = item.end;
+        }
+        layout.set(item.id, { col, totalCols: 1 });
+    }
+
+    const parent = new Map(items.map(it => [it.id, it.id]));
+    const find = (id) => {
+        if (parent.get(id) !== id) parent.set(id, find(parent.get(id)));
+        return parent.get(id);
+    };
+    const union = (a, b) => {
+        parent.set(find(a), find(b));
+    };
+
+    for (let i = 0; i < items.length; i++) {
+        for (let j = i + 1; j < items.length; j++) {
+            if (timesOverlap(items[i].start, items[i].end, items[j].start, items[j].end)) {
+                union(items[i].id, items[j].id);
+            }
+        }
+    }
+
+    const clusterCols = new Map();
+    for (const item of items) {
+        const root = find(item.id);
+        const { col } = layout.get(item.id);
+        clusterCols.set(root, Math.max(clusterCols.get(root) || 0, col + 1));
+    }
+
+    for (const item of items) {
+        const info = layout.get(item.id);
+        info.totalCols = clusterCols.get(find(item.id));
+        layout.set(item.id, info);
+    }
+
+    return layout;
+}
+
+function getOverlapStyle(layout) {
+    if (!layout || layout.totalCols <= 1) return {};
+    const { col, totalCols } = layout;
+    const gap = 2;
+    return {
+        left: `calc(4px + ${col} * ((100% - 8px - ${(totalCols - 1) * gap}px) / ${totalCols} + ${gap}px))`,
+        right: 'auto',
+        width: `calc((100% - 8px - ${(totalCols - 1) * gap}px) / ${totalCols})`,
+        zIndex: 2 + col,
+    };
+}
+
 function Timeline() {
     const [scheduleList, setScheduleList] = useState([]);
     const [fixedList, setFixedList] = useState([]);
     const [aiMessage, setAiMessage] = useState('');
+    const [aiResult, setAiResult] = useState(null);
     const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
 
     const [aiLoading, setAiLoading] = useState(false);
@@ -143,12 +232,14 @@ function Timeline() {
     const handleAiSubmit = async (e) => {
         e.preventDefault();
         setAiLoading(true);
+        setAiResult(null);
         try {
-            await request('/schedule/ai', { method: 'POST', body: { message: aiMessage } });
-            setAiMessage(''); 
+            const data = await request('/schedule/ai', { method: 'POST', body: { message: aiMessage } });
+            setAiMessage('');
+            setAiResult({ ok: true, text: data.message || '처리 완료!' });
             loadData();
-        } catch (err) { 
-            alert(err.message); 
+        } catch (err) {
+            setAiResult({ ok: false, text: err.message || 'AI 처리에 실패했습니다.' });
         } finally {
             setAiLoading(false);
         }
@@ -291,22 +382,29 @@ function Timeline() {
         <div className="timeline-page-container">
             {ghost && <div className={`timetable-event ${ghost.bgClass}`} style={{ position: 'fixed', left: ghost.x, top: ghost.y, width: ghost.width, height: ghost.height, opacity: 0.75, pointerEvents: 'none', zIndex: 9999, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', transform: 'rotate(2deg)' }}>{ghost.title}</div>}
 
-            <div className="timeline-top-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '24px', alignItems: 'center' }}>
-                <form onSubmit={handleAiSubmit} style={{ flex: 1, minWidth: '280px', display: 'flex', gap: '10px' }}>
-                    <input 
-                        type="text" 
-                        placeholder="AI에게 지시하기 (예: '금요일 오후 3시에 미팅 추가')" 
-                        value={aiMessage} 
-                        onChange={(e) => setAiMessage(e.target.value)} 
-                        required 
-                        disabled={aiLoading}
-                        style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-brown)', fontSize: '14px', outline: 'none' }} 
-                    />
-                    <button type="submit" className="btn-ai-submit" disabled={aiLoading}>
-                        {aiLoading ? 'AI 처리 중...' : 'AI 생성 지시'}
-                    </button>
-                </form>
-                <button className="btn-add-regular" style={{ whiteSpace: 'nowrap' }} onClick={() => { setNewEvent({ title: '', date: dayIdxToDateStr(new Date().getDay()), startTime: '09:00', endTime: '10:00', category: '기타' }); setAddModalOpen(true); }}>+ 일반 일정 추가</button>
+            <div className="timeline-top-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '24px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <form onSubmit={handleAiSubmit} style={{ display: 'flex', gap: '10px' }}>
+                        <input
+                            type="text"
+                            placeholder="AI에게 지시하기 (예: '금요일 오후 3시에 미팅 추가')"
+                            value={aiMessage}
+                            onChange={(e) => { setAiMessage(e.target.value); setAiResult(null); }}
+                            required
+                            disabled={aiLoading}
+                            style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-brown)', fontSize: '14px', outline: 'none' }}
+                        />
+                        <button type="submit" className="btn-ai-submit" disabled={aiLoading}>
+                            {aiLoading ? 'AI 처리 중...' : 'AI 생성 지시'}
+                        </button>
+                    </form>
+                    {aiResult && (
+                        <div style={{ fontSize: '13px', padding: '8px 14px', borderRadius: '8px', background: aiResult.ok ? '#eafaf1' : '#fdecea', color: aiResult.ok ? '#1e8449' : '#c0392b', border: `1px solid ${aiResult.ok ? '#a9dfbf' : '#f5c6cb'}` }}>
+                            {aiResult.ok ? '✅ ' : '⚠️ '}{aiResult.text}
+                        </div>
+                    )}
+                </div>
+                <button className="btn-add-regular" style={{ whiteSpace: 'nowrap', marginTop: '2px' }} onClick={() => { setNewEvent({ title: '', date: dayIdxToDateStr(new Date().getDay()), startTime: '09:00', endTime: '10:00', category: '기타' }); setAddModalOpen(true); }}>+ 일반 일정 추가</button>
             </div>
 
             <div className="dashboard-content-flex" style={{ display: 'flex', flexDirection: windowWidth <= 1200 ? 'column' : 'row', gap: '24px', alignItems: 'flex-start' }}>
@@ -330,15 +428,20 @@ function Timeline() {
                                 <div key={dateStr} className={`day-col ${isToday ? 'is-today' : ''}`} style={{ flex: 1, minWidth: 0 }}>
                                     <div className="day-header">{headerText}</div>
                                     <div className="day-grid" style={{ height: `${hours * PX_PER_HOUR}px` }} onClick={(e) => handleGridClick(e, dateStr, idx)}>
-                                        {scheduleList.filter(s => s.date === dateStr).map((s) => {
+                                        {(() => {
+                                            const daySchedules = scheduleList.filter(s => normDateStr(s.date) === dateStr);
+                                            const overlapLayout = layoutDayEvents(daySchedules);
+                                            return daySchedules.map((s) => {
                                             const { top, height } = getPos(s.startTime, s.endTime);
+                                            const overlapStyle = getOverlapStyle(overlapLayout.get(s.id));
                                             return (
-                                                <div key={s.id} className={`timetable-event ${categoryColors[s.category] || 'bg-pastel-green'} ${s.isCompleted ? 'is-completed' : ''}`} style={{ top, height, opacity: draggingId === s.id ? 0.2 : 0.85 }} onMouseDown={(e) => handleDragStart(e, s, idx)} onClick={(e) => { e.stopPropagation(); setSelectedEvent({ id: s.id, title: s.title, date: s.date, startTime: s.startTime.substring(0, 5), endTime: s.endTime ? s.endTime.substring(0, 5) : '', category: s.category || '기타', isCompleted: s.isCompleted || false }); setModalOpen(true); }}>
+                                                <div key={s.id} className={`timetable-event ${categoryColors[s.category] || 'bg-pastel-green'} ${s.isCompleted ? 'is-completed' : ''}`} style={{ top, height, opacity: draggingId === s.id ? 0.2 : 0.85, ...overlapStyle }} onMouseDown={(e) => handleDragStart(e, s, idx)} onClick={(e) => { e.stopPropagation(); setSelectedEvent({ id: s.id, title: s.title, date: normDateStr(s.date), startTime: s.startTime.substring(0, 5), endTime: s.endTime ? s.endTime.substring(0, 5) : '', category: s.category || '기타', isCompleted: s.isCompleted || false }); setModalOpen(true); }}>
                                                     <span style={{ fontSize: '10px', opacity: 0.7 }}>{s.startTime.substring(0,5)}</span>{s.title}
                                                     <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, s)} />
                                                 </div>
                                             );
-                                        })}
+                                        });
+                                        })()}
                                         {fixedList.filter(f => f.dayOfWeek === dbDay && !(f.startDate && f.startDate > dateStr) && !(f.endDate && f.endDate < dateStr) && !skippedFixedKeys.includes(`${f.id}-${dateStr}`)).map((f) => {
                                             const { top, height } = getPos(f.startTime, f.endTime);
                                             return (
